@@ -27,4 +27,5 @@ public enum JSONValue: Codable, Equatable, Sendable {
         }
     }
     public var stringValue: String? { if case .string(let s) = self { return s }; return nil }
+    public var doubleValue: Double? { if case .number(let n) = self { return n }; return nil }
 }

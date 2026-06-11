@@ -18,8 +18,12 @@ public actor DaemonSoul {
     private var growthState: GrowthState
     private let growthStore: GrowthStateStore
 
+    // ── Memory (M4) ──
+    private let memoryStore: MemoryStore
+
     public init(store: StateStore, growthStore: GrowthStateStore, clock: SoulClock,
-                watchedBundleIDs: [String], nudgeBudgetPerHour: Int, genome: Genome) {
+                watchedBundleIDs: [String], nudgeBudgetPerHour: Int, genome: Genome,
+                memoryStore: MemoryStore) {
         self.store = store; self.clock = clock
         self.watchedBundleIDs = Set(watchedBundleIDs)
         self.perceptLog = PerceptLog(clock: clock)
@@ -30,6 +34,7 @@ public actor DaemonSoul {
         self.lastPresenceCheck = clock.now
         self.growthStore = growthStore
         self.growthState = growthStore.load()
+        self.memoryStore = memoryStore
     }
 
     public func noteInteraction() {
@@ -177,5 +182,47 @@ public actor DaemonSoul {
          "bond": .number(Double(growthState.bond)),
          "streakDays": .number(Double(growthState.streakDays)),
          "progress": .number(growthState.progressToNext)]
+    }
+
+    // ── Memory (M4) ──
+
+    public var memoryCount: Int { memoryStore.count() }
+
+    public func addMemory(_ memory: Memory) { memoryStore.add(memory) }
+
+    public func recallMemories(query: String, limit: Int = 5) -> [Memory] {
+        MemorySearch.search(query: query, in: memoryStore.getAll(), limit: limit)
+    }
+
+    public func performDream() -> (diaryEntry: String, newSemantics: [Memory], milestones: [Memory]) {
+        let episodic = memoryStore.getAll().filter { $0.kind == .episodic }
+        let newSemantics = DreamEngine.distill(episodic: episodic)
+        let milestones = DreamEngine.checkMilestones(growthState: growthState)
+        // Add new memories
+        newSemantics.forEach { memoryStore.add($0) }
+        milestones.forEach { memoryStore.add($0) }
+        // Write diary
+        let entry = DiaryWriter.writeEntry(date: clock.now, events: episodic, mood: state.mood, stage: growthState.stage)
+        return (entry, newSemantics, milestones)
+    }
+
+    public func exportArchive() throws -> Data {
+        try ArchiveExporter.export(memories: memoryStore.getAll(), growth: growthState, soul: state)
+    }
+
+    public func importArchive(_ data: Data) throws {
+        let archive = try ArchiveExporter.importArchive(data)
+        growthState = archive.growthState
+        state = archive.soulState
+        // Replace memories
+        for m in memoryStore.getAll() { memoryStore.delete(id: m.id) }
+        for m in archive.memories { memoryStore.add(m) }
+        try? growthStore.save(growthState)
+        try? store.save(state)
+    }
+
+    /// Get top memories for persona prompt
+    public func topMemoriesForPrompt(query: String = "", limit: Int = 3) -> [Memory] {
+        MemorySearch.search(query: query, in: memoryStore.getAll(), limit: limit)
     }
 }

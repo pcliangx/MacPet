@@ -19,7 +19,7 @@
 | ✅ | **M1 借壳还魂**（首个可玩版） | `v0.2.0-m1`；计划见 `docs/superpowers/plans/2026-06-12-m1-body-and-watcher.md` |
 | ✅ | **M2 它活了** | `v0.3.0-m2`；计划见 `docs/superpowers/plans/2026-06-12-m2-it-lives.md` |
 | ✅ | **M3 它开始长大** | `v0.4.0-m3`；计划见 `docs/superpowers/plans/2026-06-13-m3-growing-up.md` |
-| ⬜ | M4 它记得你 | — |
+| ✅ | **M4 它记得你** | `v0.5.0-m4`；计划见 `docs/superpowers/plans/2026-06-13-m4-remembers-you.md` |
 | ⬜ | M5 它是你创造的 | 形象穿刺已验证（`spikes/svg-pet/`） |
 | ⬜ | M6 它有自己的人生 | — |
 | ⬜ | M7 它有朋友了 | — |
@@ -27,6 +27,8 @@
 | ⬜ | M9 它收到了礼物 | — |
 
 **M0 实测在码的机制**（42 单测全绿，headless 端到端验收通过）：事件驱动 LLM agent 循环（OpenAI 兼容、流式、工具调用增量组装）· 反射弧（注意力×优先级喊人梯度）· 四心情引擎 · 阶段门控工具箱（`speak`/`emote`）· 人格合成 v0（基因+阶段+心情）· 唤醒策略（alert 直通/nudge 预算）· 一颗心并发（交互快车道抢占后台+失败回滚）· 外设 NDJSON 协议族 v0（感官/工具/口粮/affordance 信封全定义）· 在场感知 · 可注入时钟+跨天对账 · 原子写生命档案（自愈+7 日备份）· 端点能力探测 · 假 LLM 测试架。
+
+**M4 新增机制**（158 单测全绿）：`Memory`（episodic/semantic/milestone + 置信度/重要度/出处）· `MemoryStore`（CRUD + 纠正 + 访问追踪）· `MemorySearch`（关键词+时近+重要度打分）· `DreamEngine`（情景→语义蒸馏 + 里程碑检测）· `DiaryWriter`（markdown 日记，阶段口吻）· `ArchiveExporter`（生命档案导出/导入 v0）· `MemoryTools`（remember/recall juvenile+ 阶段门控）· `PersonaSynth` 记忆染色（不确定用问句）· DaemonSoul 集成（做梦循环/日记/档案）。
 
 **M3 新增机制**（128 单测全绿）：`GrowthState`（XP/羁绊/streak/阶段进度）· `EconomyEngine`（XP 计算规则/日封顶/streak 倍率/羁绊增量）· `FuelProcessor`（fuel→XP log 递减曲线）· `GrowthStateStore`（原子写成长档案）· `DevMode`（XP 注入/阶段跳转/streak 覆盖/重置）· DaemonSoul growth 集成（applyXP/addBond/applyFuelReport/dailyRollover/growthSnapshot）· cc-watcher fuel.report（PostToolUse 估算 token）· MpetApp 成长感知 UI（状态菜单 XP/streak/bond/progress）。
 
@@ -404,7 +406,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | ✅ | **M1 借壳还魂**（首个可玩版） | 桌面身体 App 接上灵魂 + **cc-watcher 插件 v0**（hook+spool+喊人+多会话+点击回归）+ **设置面板 v0**（模型/Key→Keychain/人设/触发/外观）+ **launchd 一键安装**——桌面有它、能聊、守望恢复，心脏已换且插件标准开始吃狗粮。**含 M0 遗留两修** ✅。`v0.2.0-m1`，69 单测全绿 |
 | ✅ | **M2 它活了** | LifecyclePhase + ReturnDetector + AttentionSeeker + IdleActions + HeartbeatScheduler + AbsentBodyNotifier + MoodEngine v2（sleeping）+ DaemonSoul 增强。`v0.3.0-m2`，106 单测全绿 |
 | ✅ | **M3 它开始长大** | GrowthState + EconomyEngine + FuelProcessor + GrowthStateStore + DevMode + cc-watcher fuel.report + MpetApp 成长感知 UI。`v0.4.0-m3`，128 单测全绿 |
-| ⬜ | **M4 它记得你** | remember/recall + 做梦 + 日记 + 防说错 + 记忆面板 + **检索方案评估（含可选 embedding 端点）** + **生命档案导出/导入 v0**（§12#2） |
+| ✅ | **M4 它记得你** | Memory + MemoryStore + MemorySearch + DreamEngine + DiaryWriter + ArchiveExporter + remember/recall 工具 + PersonaSynth 记忆染色。`v0.5.0-m4`，158 单测全绿 |
 | ⬜ | **M5 它是你创造的** | SVG 形象系统：基因组 + 阶段骨架 + 表情变体 + 部件级动画 + `SVGRenderer`（透明 WKWebView v0）+ 共创仪式 + **初见孵化 onboarding**（蛋 → 创造仪式完成即孵化，§11）；位图生图作可选换装来源（可后置）。形象穿刺已验证 `spikes/svg-pet/` |
 | ⬜ | **M6 它有自己的人生** | 小爪子分级授权 + 它的房间/小项目 + 里程碑纪念日 + 性格永续分化 |
 | ⬜ | **M7 它有朋友了** | mpet-courier v0（iroh 直连/relay 兜底）+ 身份密钥（孵化即领）+ ticket 加好友 + 访客宠物运行时 + 串门 + 双签名异步对战（带 sim 版本号）+ 宿敌——**无账号系统**；档案导出扩展**含身份密钥**（换机不失身份，§12#2 闭环） |
@@ -435,7 +437,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | ✅ **M1 借壳还魂** | §5.1 身体外设（MpetApp + DaemonSoul actor + LaunchdInstaller）· §10.9 cc-watcher 第一方插件（HookInstaller + CCSpoolMonitor + CCEvent + mpet-cc-watcher）· §5.2 感知器「工作脉搏」接入 · §11 关键体验（SVGRenderer + ChatPanel + BubbleView + StatusMenu + SettingsPanel + Onboarding）· §12 #3 Keychain（KeychainStore）· §3 支柱 5「能力即陪伴」启程 |
 | ✅ **M2 它活了** | §5.2 反射弧（LifecyclePhase/MoodEngine v2+sleeping/IdleActions）· §5.1 身体缺席降级（AbsentBodyNotifier）· §6.3 作息自适应 · §6.4 求关注（AttentionSeeker）· §11 回归问候（ReturnDetector）· HeartbeatScheduler · §3 支柱 1「活着」 |
 | ✅ **M3 它开始长大** | §6.1 成长四维（GrowthState）· §6.2 经济模型（EconomyEngine XP/羁绊/封顶/streak）· §10.1 fuel（FuelProcessor log 曲线）+ §10.9 cc-watcher fuel.report · §11 成长可感知面（MpetApp 状态菜单 XP/streak/bond/progress）· §12 #5 开发模式（DevMode）/ #6 伙食费透明 · §3 支柱 2「会长大」 |
-| ⬜ **M4 它记得你** | §7 记忆系统（情景/语义/做梦蒸馏/防说错/检索）· §5.2 `remember`·`recall`·`diary` 阶段工具 · §12 #2 生命档案导出/导入 v0 · §3 支柱 3「记得你」 |
+| ✅ **M4 它记得你** | §7 记忆系统（Memory/MemoryStore/MemorySearch/DreamEngine/DiaryWriter）· §5.2 `remember`·`recall`（MemoryTools juvenile+）· §12 #2 生命档案导出/导入 v0（ArchiveExporter）· PersonaSynth 记忆染色 · §3 支柱 3「记得你」 |
 | ⬜ **M5 它是你创造的** | §8 形象与动画（基因组/阶段骨架/表情变体/部件级动画/`SVGRenderer`/共创仪式）· §11 初见孵化 onboarding · §6.1 外观维度成长 · §3 支柱 6「是你创造的」 |
 | ⬜ **M6 它有自己的人生** | §5.4 爪子分级授权 · §6.5 成年后五层循环（自己的小日子/性格永续分化/共同经历/形态进化）· §3 支柱 4「有自己的小日子」 |
 | ⬜ **M7 它有朋友了** | §9.1 宠物身份与名片 · §9.2 信使与轻基建（iroh）· §9.3 加好友与串门 · §9.4 对战（数值底盘+性格演出/双签名）· §12 #2 档案导出含密钥（闭环）· §6.5 第 5 层「它的朋友圈」· §3 支柱 7「有朋友圈」 |

@@ -34,4 +34,18 @@ public enum PersonaSynth {
         lines.append("分寸：不愧疚绑架、不刷屏；一次最多说两句。")
         return lines.joined(separator: "\n")
     }
+
+    /// M4 记忆着色：在基础人格上叠加回忆上下文
+    public static func systemPrompt(genome: Genome, stage: Stage, mood: Mood,
+                                    hour: Int, ownerPresent: Bool,
+                                    memories: [Memory] = []) -> String {
+        var prompt = systemPrompt(genome: genome, stage: stage, mood: mood,
+                                  hour: hour, ownerPresent: ownerPresent)
+        if !memories.isEmpty && stage >= .juvenile {
+            let memoryLines = memories.prefix(5).map { "- \($0.content)（置信度\($0.confidence)）" }
+            prompt += "\n\n你记得这些事：\n" + memoryLines.joined(separator: "\n")
+            prompt += "\n不确定的记忆用问句提起（「你是不是说过…？」），不要当事实陈述。"
+        }
+        return prompt
+    }
 }
