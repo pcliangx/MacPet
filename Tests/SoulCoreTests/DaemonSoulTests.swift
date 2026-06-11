@@ -89,4 +89,46 @@ final class DaemonSoulTests: XCTestCase {
         XCTAssertEqual(archive.identity?.publicKey, identity.publicKey)
         XCTAssertEqual(archive.version, 2)
     }
+
+    // ── M8 plaza & gating tests ──
+
+    func attachStores(to daemon: DaemonSoul) async -> URL {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        await daemon.attachSocialStores(
+            plaza: PlazaSightingStore(directory: base.appendingPathComponent("plaza")),
+            safety: SocialSafety(directory: base.appendingPathComponent("safety")),
+            badges: BadgeCollectionStore(directory: base.appendingPathComponent("badges"))
+        )
+        return base
+    }
+
+    func testStageGatingForSocial() async {
+        let clock = TestClock(Date(timeIntervalSince1970: 0))
+        let (daemon, _) = makeDaemon(clock: clock)
+        // baby 阶段：不可串门、不可广场、不可天梯
+        let canVisit = await daemon.canVisitFriends
+        let canPlaza = await daemon.canUsePlaza
+        let canLadder = await daemon.canUseLadder
+        XCTAssertFalse(canVisit)
+        XCTAssertFalse(canPlaza)
+        XCTAssertFalse(canLadder)
+    }
+
+    func testBadgeUnlockOnFirstFriend() async {
+        let clock = TestClock(Date(timeIntervalSince1970: 0))
+        let (daemon, _) = makeDaemon(clock: clock)
+        _ = await attachStores(to: daemon)
+        let friendIdentity = PetIdentity.generate(petName: "朋友", species: "小猫")
+        _ = await daemon.addFriend(from: FriendTicket.create(from: friendIdentity))
+        let badges = await daemon.checkBadges()
+        XCTAssertTrue(badges.contains { $0.id == "first-friend" })
+    }
+
+    func testSocialInteractionBlockedWithoutStores() async {
+        let clock = TestClock(Date(timeIntervalSince1970: 0))
+        let (daemon, _) = makeDaemon(clock: clock)
+        // 未 attach safety store → 默认拒绝
+        let allowed = await daemon.allowsSocialInteraction(nodeId: "anyone")
+        XCTAssertFalse(allowed)
+    }
 }
