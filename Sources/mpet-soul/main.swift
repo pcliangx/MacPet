@@ -19,11 +19,15 @@ let store = StateStore(directory: soulDir, clock: clock)
 let growthDir = supportDir.appendingPathComponent("soul/growth")
 try? FileManager.default.createDirectory(at: growthDir, withIntermediateDirectories: true)
 let growthStore = GrowthStateStore(directory: growthDir, clock: clock)
+let memoryDir = supportDir.appendingPathComponent("soul/memory")
+try? FileManager.default.createDirectory(at: memoryDir, withIntermediateDirectories: true)
+let memoryStore = MemoryStore(directory: memoryDir)
 let daemon = DaemonSoul(
     store: store, growthStore: growthStore, clock: clock,
     watchedBundleIDs: config.watchedBundleIDs,
     nudgeBudgetPerHour: config.nudgeBudgetPerHour,
-    genome: .default
+    genome: .default,
+    memoryStore: memoryStore
 )
 let registry = ToolRegistry()
 let provider = OpenAILLMClient(config: config.llm)
@@ -37,6 +41,7 @@ let sink: DirectiveSink = { m in
     }
 }
 await registry.registerCoreTools(sink: sink)
+await MemoryTools.register(registry: registry, memoryStore: memoryStore)
 
 func currentAttention() -> Attention {
     AttentionResolver.resolve(PresenceSensorMac.snapshot(watched: Set(config.watchedBundleIDs)))
@@ -139,6 +144,18 @@ Task {
             if let speech = hb.speech {
                 sink(.directive(kind: "speak", payload: ["text": .string(speech)]))
             }
+        }
+
+        // 做梦：深夜时段（2-4 点）且还没做过梦
+        let hour = Calendar.current.component(.hour, from: Date())
+        if (2...4).contains(hour) {
+            let dream = await daemon.performDream()
+            if !dream.newSemantics.isEmpty || !dream.milestones.isEmpty {
+                print("💭 做梦：蒸馏了 \(dream.newSemantics.count) 条语义记忆，发现 \(dream.milestones.count) 个里程碑")
+            }
+            // Save diary
+            let diaryDir = supportDir.appendingPathComponent("soul/diary")
+            try? DiaryWriter.save(entry: dream.diaryEntry, date: Date(), to: diaryDir)
         }
 
         // 重新计算 mood
