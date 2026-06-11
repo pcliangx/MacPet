@@ -28,13 +28,16 @@ let roomStore = PetRoomStore(directory: roomDir)
 let projectDir = supportDir.appendingPathComponent("soul/projects")
 try? FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
 let projectStore = PetProjectStore(directory: projectDir)
+let friendsDir = supportDir.appendingPathComponent("soul/friends")
+try? FileManager.default.createDirectory(at: friendsDir, withIntermediateDirectories: true)
+let friendStore = FriendStore(directory: friendsDir)
 let daemon = DaemonSoul(
-    store: store, growthStore: growthStore, clock: clock,
+    store: store, growthStore: growthStore, memoryStore: memoryStore,
+    roomStore: roomStore, projectStore: projectStore, friendStore: friendStore,
+    clock: clock,
     watchedBundleIDs: config.watchedBundleIDs,
     nudgeBudgetPerHour: config.nudgeBudgetPerHour,
-    genome: .default,
-    memoryStore: memoryStore,
-    roomStore: roomStore, projectStore: projectStore
+    genome: .default
 )
 let registry = ToolRegistry()
 let provider = OpenAILLMClient(config: config.llm)
@@ -49,6 +52,10 @@ let sink: DirectiveSink = { m in
 }
 await registry.registerCoreTools(sink: sink)
 await MemoryTools.register(registry: registry, memoryStore: memoryStore)
+
+// M7: 孵化即领身份密钥（spec §9.1）
+let identity = await daemon.ensureIdentity(petName: Genome.default.petName, species: Genome.default.species)
+print("🪪 宠物身份就绪：\(identity.petName)（公钥 \(identity.publicKey.prefix(8).map { String(format: "%02x", $0) }.joined())…）")
 
 func currentAttention() -> Attention {
     AttentionResolver.resolve(PresenceSensorMac.snapshot(watched: Set(config.watchedBundleIDs)))
