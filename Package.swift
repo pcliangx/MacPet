@@ -8,6 +8,13 @@ let package = Package(
         .target(name: "SoulCore"),
         .executableTarget(name: "mpet-soul", dependencies: ["SoulCore"]),
         .executableTarget(name: "soulctl", dependencies: ["SoulCore"]),
+        .executableTarget(name: "mpet-cc-watcher", dependencies: ["SoulCore"]),
+        .executableTarget(name: "MpetApp", dependencies: ["SoulCore"],
+                          linkerSettings: [
+                              .linkedFramework("AppKit"),
+                              .linkedFramework("WebKit"),
+                              .linkedFramework("SwiftUI"),
+                          ]),
         .testTarget(name: "SoulCoreTests", dependencies: ["SoulCore"]),
     ]
 )
