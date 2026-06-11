@@ -34,10 +34,13 @@ public actor DaemonSoul {
     private var personalityTraits: PersonalityTraits = .default
     private var todayInteractions = PersonalityDrift.DayInteractions()
 
-    public init(store: StateStore, growthStore: GrowthStateStore, clock: SoulClock,
-                watchedBundleIDs: [String], nudgeBudgetPerHour: Int, genome: Genome,
-                memoryStore: MemoryStore,
-                roomStore: PetRoomStore, projectStore: PetProjectStore) {
+    // ── Social (M7) ──
+    private var identity: PetIdentity?
+    private let friendStore: FriendStore
+
+    public init(store: StateStore, growthStore: GrowthStateStore, memoryStore: MemoryStore,
+                roomStore: PetRoomStore, projectStore: PetProjectStore, friendStore: FriendStore, clock: SoulClock,
+                watchedBundleIDs: [String], nudgeBudgetPerHour: Int, genome: Genome) {
         self.store = store; self.clock = clock
         self.watchedBundleIDs = Set(watchedBundleIDs)
         self.perceptLog = PerceptLog(clock: clock)
@@ -51,6 +54,7 @@ public actor DaemonSoul {
         self.memoryStore = memoryStore
         self.roomStore = roomStore
         self.projectStore = projectStore
+        self.friendStore = friendStore
     }
 
     public func noteInteraction() {
@@ -139,7 +143,10 @@ public actor DaemonSoul {
          "lastInteraction": state.lastInteractionAt.map { .number($0.timeIntervalSince1970) } ?? .null,
          "personality": .string(PersonalityDrift.describe(personalityTraits)),
          "roomItems": .number(Double(roomStore.itemCount)),
-         "roomGifts": .number(Double(roomStore.giftCount))]
+         "roomGifts": .number(Double(roomStore.giftCount)),
+         "friends": .number(Double(friendStore.friendCount())),
+         "rivals": .number(Double(friendStore.rivalCount())),
+         "hasIdentity": .bool(identity != nil)]
     }
 
     // ── Growth (M3) ──
@@ -302,5 +309,64 @@ public actor DaemonSoul {
     public func authorizeTool(name: String, tier: ToolTier) -> Bool {
         // Simplified: real check needs ToolRegistry lookup for ToolSpec
         return true
+    }
+
+    // ── Identity (M7) ──
+
+    public func ensureIdentity(petName: String, species: String) -> PetIdentity {
+        if let id = identity { return id }
+        let id = PetIdentity.generate(petName: petName, species: species)
+        identity = id
+        return id
+    }
+
+    public var petCard: PetCard? { identity?.card() }
+    public var hasIdentity: Bool { identity != nil }
+
+    // ── Friends (M7) ──
+
+    public func addFriend(from ticket: FriendTicket) -> Friend { friendStore.addFriend(from: ticket) }
+    public func makeRival(id: String) { friendStore.setRival(id: id) }
+    public func friendCount() -> Int { friendStore.friendCount() }
+    public func rivalCount() -> Int { friendStore.rivalCount() }
+    public func getAllFriends() -> [Friend] { friendStore.getAll() }
+
+    // ── Battle (M7) ──
+
+    public func initiateBattle(friendId: String, seed: Int) -> BattleResult? {
+        guard let friend = friendStore.get(id: friendId), let myCard = petCard else { return nil }
+        let result = BattleEngine.resolve(
+            challenger: myCard, defender: friend.card,
+            challengerTraits: personalityTraits, defenderTraits: .default, seed: seed
+        )
+        let won = result.winnerKey == myCard.publicKey
+        friendStore.updateBattle(id: friendId, won: won)
+        return result
+    }
+
+    // ── Social snapshot (M7) ──
+
+    public func socialSnapshot() -> [String: JSONValue] {
+        ["friends": .number(Double(friendStore.friendCount())),
+         "rivals": .number(Double(friendStore.rivalCount())),
+         "hasIdentity": .bool(identity != nil)]
+    }
+
+    // ── Archive (M7: 含身份密钥) ──
+
+    public func exportArchiveWithIdentity() throws -> Data {
+        try ArchiveExporter.export(memories: memoryStore.getAll(), growth: growthState, soul: state,
+                                    identity: identity, friends: friendStore.getAll())
+    }
+
+    public func importArchiveWithIdentity(_ data: Data) throws {
+        let archive = try ArchiveExporter.importArchive(data)
+        growthState = archive.growthState
+        state = archive.soulState
+        if let id = archive.identity { identity = id }
+        for m in memoryStore.getAll() { memoryStore.delete(id: m.id) }
+        for m in archive.memories { memoryStore.add(m) }
+        try? growthStore.save(growthState)
+        try? store.save(state)
     }
 }
