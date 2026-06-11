@@ -91,6 +91,11 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
             await daemon.recomputeMood(attention: att)
             await handlePercept(Percept(kind: "body.\(kind)", priority: .nudge, payload: payload, at: clock.now))
         case .senseEvent(let p):
+            // M2: 身体不在线时 alert 走系统通知
+            if p.priority == .alert {
+                let title = p.payload["title"]?.stringValue ?? p.kind
+                AbsentBodyNotifier.notify(title: "🦊 mpet", body: title)
+            }
             await handlePercept(p)
         case .actionInvoke(let eventId, let actionId):
             print("🎯 affordance 回调：\(eventId)/\(actionId)")
@@ -99,6 +104,42 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
         }
     }
 }
+// M2: 定期 lifecycle 检查（每 60 秒）
+Task {
+    while true {
+        try? await Task.sleep(nanoseconds: 60_000_000_000)  // 60 秒
+        let snap = PresenceSensorMac.snapshot(watched: Set(config.watchedBundleIDs))
+        let idleMinutes = Int(snap.idleSeconds / 60)
+        await daemon.updateLifecycle(idleMinutes: idleMinutes)
+
+        // 检查回归问候
+        if let greeting = await daemon.generateReturnGreeting() {
+            sink(.directive(kind: "speak", payload: ["text": .string(greeting)]))
+        }
+
+        // 检查求关注
+        if let seek = await daemon.checkAttentionSeeking(idleMinutes: idleMinutes) {
+            sink(.directive(kind: "speak", payload: ["text": .string(seek.text)]))
+            sink(.directive(kind: "emote", payload: ["animation": .string(seek.emote)]))
+        }
+
+        // 检查心跳
+        let hb = await daemon.checkHeartbeat()
+        if hb.shouldWake {
+            if let emote = hb.emote {
+                sink(.directive(kind: "emote", payload: ["animation": .string(emote)]))
+            }
+            if let speech = hb.speech {
+                sink(.directive(kind: "speak", payload: ["text": .string(speech)]))
+            }
+        }
+
+        // 重新计算 mood
+        let att = currentAttention()
+        await daemon.recomputeMood(attention: att)
+    }
+}
+
 server.start()
 print("mpet-soul \(SoulCoreInfo.version) ｜ soul.sock 就绪 ｜ 模型=\(config.llm.model)")
 fflush(stdout)

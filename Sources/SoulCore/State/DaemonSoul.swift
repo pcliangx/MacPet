@@ -7,7 +7,11 @@ public actor DaemonSoul {
     private let watchedBundleIDs: Set<String>
     private let perceptLog: PerceptLog
     private let wakePolicy: WakePolicy
+    private var lifecyclePhase: LifecyclePhase = .active
+    private let heartbeat: HeartbeatScheduler
+    private let attentionSeeker: AttentionSeeker
     private var state: SoulState
+    private var lastPresenceCheck: Date
     public private(set) var interactionCount: Int = 0
 
     public init(store: StateStore, clock: SoulClock,
@@ -16,7 +20,10 @@ public actor DaemonSoul {
         self.watchedBundleIDs = Set(watchedBundleIDs)
         self.perceptLog = PerceptLog(clock: clock)
         self.wakePolicy = WakePolicy(clock: clock, nudgeBudgetPerHour: nudgeBudgetPerHour)
+        self.heartbeat = HeartbeatScheduler(clock: clock)
+        self.attentionSeeker = AttentionSeeker(budgetPerHour: 2)
         self.state = store.load()
+        self.lastPresenceCheck = clock.now
     }
 
     public func noteInteraction() {
@@ -34,6 +41,47 @@ public actor DaemonSoul {
         try? store.save(state)
     }
     public var currentMood: Mood { state.mood }
+
+    public var currentPhase: LifecyclePhase { lifecyclePhase }
+
+    public func updateLifecycle(idleMinutes: Int) {
+        let hour = Calendar.current.component(.hour, from: clock.now)
+        let wasAsleep = lifecyclePhase == .asleep
+        lifecyclePhase = LifecyclePhase.resolve(hour: hour, idleMinutes: idleMinutes, wasAsleep: wasAsleep)
+        let since = state.lastInteractionAt.map { clock.now.timeIntervalSince($0) } ?? .infinity
+        let attention: Attention
+        if idleMinutes > 180 { attention = .away }
+        else if idleMinutes < 5 { attention = .attending }
+        else { attention = .elsewhere }
+        let mood = MoodEngine.moodV2(.init(attention: attention, hour: hour,
+            secondsSinceInteraction: since, phase: lifecyclePhase))
+        state.mood = mood
+        try? store.save(state)
+    }
+
+    public func checkHeartbeat() async -> (shouldWake: Bool, emote: String?, speech: String?) {
+        let idle = idleMinutesFromState()
+        guard await heartbeat.shouldFire(lastInteractionMinutesAgo: idle) else { return (false, nil, nil) }
+        let (emote, speech) = IdleActions.pick(phase: lifecyclePhase, mood: state.mood)
+        return (true, emote, speech)
+    }
+
+    public func checkAttentionSeeking(idleMinutes: Int) -> (text: String, emote: String)? {
+        guard attentionSeeker.shouldSeekAttention(idleMinutes: idleMinutes, phase: lifecyclePhase) else { return nil }
+        attentionSeeker.consumeAttention()
+        return (AttentionSeeker.pickAction(mood: state.mood), AttentionSeeker.pickEmote(mood: state.mood))
+    }
+
+    public func generateReturnGreeting() -> String? {
+        guard lifecyclePhase == .returning else { return nil }
+        let minutes = idleMinutesFromState()
+        return ReturnDetector.greeting(absenceMinutes: minutes, phase: lifecyclePhase, mood: state.mood)
+    }
+
+    private func idleMinutesFromState() -> Int {
+        guard let last = state.lastInteractionAt else { return 999 }
+        return Int(clock.now.timeIntervalSince(last) / 60)
+    }
 
     public func handleEvent(kind: String, payload: [String: JSONValue]) {
         noteInteraction()

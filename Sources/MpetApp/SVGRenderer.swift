@@ -42,6 +42,8 @@ struct SVGRenderer: NSViewRepresentable {
     .state-sleepy #pet-root{animation-duration:4.6s}
     .state-missyou .eyes-up,.state-missyou .m-idle{display:block}
     .state-sleeping .eyes-closed,.state-sleeping .m-sleep{display:block}
+    .state-sleeping #pet-root{animation-duration:5.8s}
+    .state-sleeping #tail{animation:none;transform:rotate(-5deg)}
     .state-alert .eyes-wide,.state-alert .m-o{display:block}
     </style></head>
     <body>
