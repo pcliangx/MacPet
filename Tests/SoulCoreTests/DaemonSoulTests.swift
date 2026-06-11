@@ -9,10 +9,14 @@ final class DaemonSoulTests: XCTestCase {
         let growthDir = dir.appendingPathComponent("growth")
         try! FileManager.default.createDirectory(at: growthDir, withIntermediateDirectories: true)
         let memoryDir = dir.appendingPathComponent("memory")
+        let roomDir = dir.appendingPathComponent("room")
+        let projectDir = dir.appendingPathComponent("projects")
         let daemon = DaemonSoul(store: StateStore(directory: dir, clock: clock),
                                 growthStore: GrowthStateStore(directory: growthDir, clock: clock), clock: clock,
                                 watchedBundleIDs: ["com.apple.Terminal"], nudgeBudgetPerHour: 4, genome: .default,
-                                memoryStore: MemoryStore(directory: memoryDir))
+                                memoryStore: MemoryStore(directory: memoryDir),
+                                roomStore: PetRoomStore(directory: roomDir),
+                                projectStore: PetProjectStore(directory: projectDir))
         await withTaskGroup(of: Void.self) { group in
             for i in 0..<100 { group.addTask { await daemon.handleEvent(kind: "click", payload: ["i": .number(Double(i))]) } }
         }
@@ -26,10 +30,14 @@ final class DaemonSoulTests: XCTestCase {
         let growthDir = dir.appendingPathComponent("growth")
         try! FileManager.default.createDirectory(at: growthDir, withIntermediateDirectories: true)
         let memoryDir = dir.appendingPathComponent("memory")
+        let roomDir = dir.appendingPathComponent("room")
+        let projectDir = dir.appendingPathComponent("projects")
         let daemon = DaemonSoul(store: StateStore(directory: dir, clock: clock),
                                 growthStore: GrowthStateStore(directory: growthDir, clock: clock), clock: clock,
                                 watchedBundleIDs: [], nudgeBudgetPerHour: 4, genome: .default,
-                                memoryStore: MemoryStore(directory: memoryDir))
+                                memoryStore: MemoryStore(directory: memoryDir),
+                                roomStore: PetRoomStore(directory: roomDir),
+                                projectStore: PetProjectStore(directory: projectDir))
         await daemon.noteInteraction()
         let last = await daemon.lastInteractionAt
         XCTAssertNotNil(last)
@@ -42,10 +50,14 @@ final class DaemonSoulTests: XCTestCase {
         try! FileManager.default.createDirectory(at: growthDir, withIntermediateDirectories: true)
         let store = StateStore(directory: dir, clock: clock)
         let memoryDir = dir.appendingPathComponent("memory")
+        let roomDir = dir.appendingPathComponent("room")
+        let projectDir = dir.appendingPathComponent("projects")
         let daemon = DaemonSoul(store: store,
                                 growthStore: GrowthStateStore(directory: growthDir, clock: clock), clock: clock,
                                 watchedBundleIDs: [], nudgeBudgetPerHour: 4, genome: .default,
-                                memoryStore: MemoryStore(directory: memoryDir))
+                                memoryStore: MemoryStore(directory: memoryDir),
+                                roomStore: PetRoomStore(directory: roomDir),
+                                projectStore: PetProjectStore(directory: projectDir))
         // Use Calendar to get a night hour relative to current time
         var cal = Calendar(identifier: .gregorian); cal.timeZone = .current
         let nightComponents = DateComponents(hour: 2, minute: 0)
