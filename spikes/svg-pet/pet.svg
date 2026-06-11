@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 340" aria-label="泡沫 · mpet SVG 形象穿刺（待机态）">
+  <!--
+    mpet SPIKE-01 · 「泡沫」幼崽态 · 独立可活版（双击用浏览器打开即有动画）
+    基因=参数（:root 变量）· 骨架=命名部件组 · 动画=部件级 CSS
+  -->
+  <style>
+    :root{
+      --fur-hue:28;
+      --fur:hsl(var(--fur-hue) 90% 63%);
+      --fur-deep:hsl(calc(var(--fur-hue) - 6) 80% 54%);
+      --ear-in:hsl(calc(var(--fur-hue) + 2) 78% 82%);
+      --cream:#FFF4E3; --line:#46322B; --blush:#FF9FAC;
+    }
+    *{transform-box:fill-box}
+    #pet-root{transform-origin:50% 100%;animation:breathe 3.4s ease-in-out infinite}
+    #pet-rock{transform-origin:50% 92%;animation:rock 7s ease-in-out infinite}
+    @keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.996,1.028)}}
+    @keyframes rock{0%,100%{transform:rotate(-.5deg)}50%{transform:rotate(.5deg)}}
+    #shadow{transform-origin:50% 50%;animation:shbr 3.4s ease-in-out infinite}
+    @keyframes shbr{0%,100%{transform:scale(1,1)}50%{transform:scale(.965,.94)}}
+    #tail{transform-origin:24% 92%;animation:wag 2.8s ease-in-out infinite}
+    @keyframes wag{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(9deg)}}
+    #ear-l{transform-origin:50% 92%;animation:twitch 7s ease-in-out infinite}
+    @keyframes twitch{0%,76%,90%,100%{transform:rotate(0)}80%{transform:rotate(-11deg)}84%{transform:rotate(4deg)}}
+    .blinker{transform-origin:50% 50%;animation:blink 4.6s infinite}
+    @keyframes blink{0%,90.5%,96%,100%{transform:scaleY(1)}93%{transform:scaleY(.06)}}
+  </style>
+
+  <ellipse id="shadow" cx="170" cy="305" rx="80" ry="11" fill="#000000" opacity=".18"/>
+  <g id="pet-root">
+    <g id="pet-rock">
+
+      <g id="tail">
+        <circle cx="252" cy="212" r="33" fill="var(--fur-deep)"/>
+        <circle cx="277" cy="177" r="25" fill="var(--fur-deep)"/>
+        <circle cx="290" cy="148" r="18" fill="var(--cream)"/>
+      </g>
+
+      <g id="body">
+        <ellipse cx="170" cy="200" rx="92" ry="88" fill="var(--fur)"/>
+        <ellipse cx="148" cy="148" rx="56" ry="38" fill="#FFFFFF" opacity=".08"/>
+        <ellipse cx="170" cy="251" rx="46" ry="32" fill="var(--cream)"/>
+        <ellipse cx="138" cy="282" rx="16" ry="10" fill="var(--fur-deep)"/>
+        <ellipse cx="202" cy="282" rx="16" ry="10" fill="var(--fur-deep)"/>
+      </g>
+
+      <g id="ears">
+        <g id="ear-l">
+          <path d="M104,138 C98,100 110,72 126,75 C144,79 150,104 145,130 Q124,142 104,138 Z" fill="var(--fur)"/>
+          <path d="M114,131 C111,104 119,86 128,88 C138,91 141,108 138,126 Q126,134 114,131 Z" fill="var(--ear-in)"/>
+          <circle cx="122" cy="80" r="7" fill="var(--fur-deep)"/>
+        </g>
+        <g id="ear-r">
+          <path d="M236,138 C242,100 230,72 214,75 C196,79 190,104 195,130 Q216,142 236,138 Z" fill="var(--fur)"/>
+          <path d="M226,131 C229,104 221,86 212,88 C202,91 199,108 202,126 Q214,134 226,131 Z" fill="var(--ear-in)"/>
+          <circle cx="218" cy="80" r="7" fill="var(--fur-deep)"/>
+        </g>
+      </g>
+
+      <g id="face">
+        <ellipse cx="170" cy="208" rx="32" ry="21" fill="var(--cream)"/>
+        <g id="eyes">
+          <g class="blinker">
+            <circle cx="132" cy="178" r="10" fill="var(--line)"/>
+            <circle cx="128.5" cy="174.5" r="3.2" fill="#fff"/>
+            <circle cx="135.5" cy="182" r="1.6" fill="#fff" opacity=".85"/>
+          </g>
+          <g class="blinker">
+            <circle cx="208" cy="178" r="10" fill="var(--line)"/>
+            <circle cx="204.5" cy="174.5" r="3.2" fill="#fff"/>
+            <circle cx="211.5" cy="182" r="1.6" fill="#fff" opacity=".85"/>
+          </g>
+        </g>
+        <ellipse cx="170" cy="198" rx="5.5" ry="4" fill="#4A332B"/>
+        <path d="M156,209 q7,7 14,0 q7,7 14,0" fill="none" stroke="#4A332B" stroke-width="3.2" stroke-linecap="round"/>
+        <ellipse cx="112" cy="200" rx="13" ry="8" fill="var(--blush)" opacity=".5"/>
+        <ellipse cx="228" cy="200" rx="13" ry="8" fill="var(--blush)" opacity=".5"/>
+      </g>
+
+    </g>
+  </g>
+</svg>

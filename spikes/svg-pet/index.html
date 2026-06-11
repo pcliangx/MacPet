@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>mpet · SPIKE-01 · 「泡沫」SVG 形象穿刺</title>
+<style>
+  :root{
+    --night-0:#0C1120; --night-1:#141C31; --night-2:#1D2842;
+    --ink:#E8E4DA; --ink-dim:#8E97AD; --gold:#FFD23F;
+    --fur-hue:28;
+    --fur:hsl(var(--fur-hue) 90% 63%);
+    --fur-deep:hsl(calc(var(--fur-hue) - 6) 80% 54%);
+    --ear-in:hsl(calc(var(--fur-hue) + 2) 78% 82%);
+    --cream:#FFF4E3; --line:#46322B; --blush:#FF9FAC;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Hiragino Sans GB",sans-serif;
+    color:var(--ink); overflow:hidden;
+    background:
+      radial-gradient(900px 600px at 68% -8%, #27345A 0%, transparent 60%),
+      radial-gradient(700px 500px at 12% 110%, #1B2440 0%, transparent 55%),
+      linear-gradient(168deg, var(--night-1) 0%, var(--night-0) 70%);
+  }
+  /* 星点 */
+  .stars{position:fixed;inset:0;pointer-events:none;background-image:
+    radial-gradient(1.4px 1.4px at 12% 18%, #ffffff66 50%, transparent 51%),
+    radial-gradient(1px 1px at 28% 8%,  #ffffff44 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 44% 22%, #ffffff55 50%, transparent 51%),
+    radial-gradient(1px 1px at 62% 12%, #ffffff3d 50%, transparent 51%),
+    radial-gradient(1.3px 1.3px at 81% 16%, #ffffff5e 50%, transparent 51%),
+    radial-gradient(1px 1px at 92% 30%, #ffffff38 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 73% 6%,  #ffffff4f 50%, transparent 51%);
+  }
+  .wrap{height:100%;display:grid;grid-template-columns:1fr 296px;gap:28px;
+        max-width:1060px;margin:0 auto;padding:34px 32px 26px;}
+  /* ── 左：舞台 ── */
+  .stage-col{display:flex;flex-direction:column;min-width:0}
+  .eyebrow{font-size:11px;letter-spacing:.34em;color:var(--ink-dim);
+           text-transform:uppercase;animation:rise .7s .05s both}
+  h1{font-family:"Kaiti SC","STKaiti","KaiTi",serif;font-weight:700;
+     font-size:30px;margin-top:10px;letter-spacing:.02em;animation:rise .7s .15s both}
+  h1 .nm{color:var(--fur)}
+  .sub{font-size:12.5px;color:var(--ink-dim);margin-top:7px;letter-spacing:.06em;
+       animation:rise .7s .25s both}
+  .stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;
+         animation:pop .8s .3s cubic-bezier(.2,1.4,.4,1) both}
+  /* 桌灯光池 */
+  .stage::before{content:"";position:absolute;width:480px;height:300px;border-radius:50%;
+    background:radial-gradient(closest-side, hsl(var(--fur-hue) 70% 60% / .14), transparent 72%);
+    bottom:4%;filter:blur(2px)}
+  /* 桌沿 */
+  .stage::after{content:"";position:absolute;left:8%;right:8%;bottom:13.5%;height:1px;
+    background:linear-gradient(90deg, transparent, #ffffff22 18%, #ffffff22 82%, transparent)}
+  svg.pet{width:min(58vh,440px);height:auto;position:relative;z-index:1}
+  .note{font-family:"Kaiti SC","STKaiti","KaiTi",serif;text-align:center;font-size:16.5px;
+        color:#C9CFDF;min-height:28px;letter-spacing:.05em;animation:rise .7s .45s both}
+  .note em{font-style:normal;opacity:.55;font-size:13px}
+  /* ── 右：观察记录栏 ── */
+  .rail{display:flex;flex-direction:column;gap:14px;animation:riseR .8s .35s both}
+  .card{background:#ffffff08;border:1px solid #ffffff14;border-radius:14px;
+        backdrop-filter:blur(6px);padding:14px 16px}
+  .card h3{font-size:10.5px;letter-spacing:.3em;color:var(--ink-dim);font-weight:600;
+           margin-bottom:10px}
+  .states{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .states button{
+    appearance:none;border:1px solid #ffffff1a;background:#ffffff0a;color:var(--ink);
+    font-family:inherit;font-size:13px;padding:9px 6px;border-radius:10px;cursor:pointer;
+    letter-spacing:.08em;transition:all .22s ease}
+  .states button:hover{background:#ffffff14;transform:translateY(-1px)}
+  .states button.on{background:hsl(var(--fur-hue) 88% 62% / .92);color:#3A2414;
+    border-color:transparent;font-weight:600;
+    box-shadow:0 4px 18px hsl(var(--fur-hue) 90% 55% / .35)}
+  .gene{font-family:"SF Mono",Menlo,monospace;font-size:11.3px;line-height:1.72;
+        color:#A9B4CC;white-space:pre}
+  .gene .k{color:#7FD1B9}.gene .v{color:#F4BF75}.gene .hue{color:var(--fur);font-weight:700}
+  .slider-row{display:flex;align-items:center;gap:10px;margin-top:10px}
+  .slider-row label{font-size:11px;color:var(--ink-dim);letter-spacing:.12em;white-space:nowrap}
+  input[type=range]{flex:1;accent-color:var(--fur);height:3px}
+  .foot{font-size:10.5px;color:#5E6880;letter-spacing:.18em;text-align:right}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes riseR{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.92) translateY(14px)}to{opacity:1;transform:none}}
+
+  /* ════════ 宠物本体：部件级动画 ════════ */
+  .pet *{transform-box:fill-box}
+  /* 呼吸（根，底部为轴）+ 轻微摇晃 */
+  #pet-root{transform-origin:50% 100%;animation:breathe 3.4s ease-in-out infinite}
+  #pet-rock{transform-origin:50% 92%;animation:rock 7s ease-in-out infinite}
+  @keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(.996,1.028)}}
+  @keyframes rock{0%,100%{transform:rotate(-.5deg)}50%{transform:rotate(.5deg)}}
+  #shadow{transform-origin:50% 50%;animation:shbr 3.4s ease-in-out infinite}
+  @keyframes shbr{0%,100%{transform:scale(1,1)}50%{transform:scale(.965,.94)}}
+  /* 尾巴 */
+  #tail{transform-origin:24% 92%;animation:wag 2.8s ease-in-out infinite}
+  @keyframes wag{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(9deg)}}
+  /* 耳朵：偶发抖动 */
+  #ear-l{transform-origin:50% 92%;animation:twitch 7s ease-in-out infinite}
+  #ear-r{transform-origin:50% 92%}
+  @keyframes twitch{0%,76%,90%,100%{transform:rotate(0)}80%{transform:rotate(-11deg)}84%{transform:rotate(4deg)}}
+  /* 眨眼（开眼类状态） */
+  .blinker{transform-origin:50% 50%}
+  .state-idle .eyes-open .blinker, .state-missyou .eyes-up .blinker{animation:blink 4.6s infinite}
+  @keyframes blink{0%,90.5%,96%,100%{transform:scaleY(1)}93%{transform:scaleY(.06)}}
+
+  /* ── 表情变体：默认全隐藏，按状态点亮 ── */
+  .eyes-open,.eyes-happy,.eyes-sleepy,.eyes-closed,.eyes-up,.eyes-wide,
+  .m-idle,.m-happy,.m-o,.m-sleep,
+  .fx-spark,.fx-zzz,.fx-heart,.fx-alert{display:none}
+  .state-idle    .eyes-open, .state-idle    .m-idle  {display:block}
+  .state-happy   .eyes-happy,.state-happy   .m-happy ,.state-happy .fx-spark{display:block}
+  .state-sleepy  .eyes-sleepy,.state-sleepy .m-o     {display:block}
+  .state-missyou .eyes-up,   .state-missyou .m-idle  ,.state-missyou .fx-heart{display:block}
+  .state-sleeping .eyes-closed,.state-sleeping .m-sleep,.state-sleeping .fx-zzz{display:block}
+  .state-alert   .eyes-wide, .state-alert   .m-o     ,.state-alert .fx-alert{display:block}
+
+  /* ── 状态对部件动画的调制 ── */
+  .state-happy #pet-bounce{transform-origin:50% 100%;animation:bounce .58s ease-in-out infinite}
+  @keyframes bounce{0%,100%{transform:translateY(0)}45%{transform:translateY(-9px)}}
+  .state-happy #tail{animation-duration:1.05s}
+  .state-happy .blush{opacity:.85;transform:scale(1.12)}
+  .state-sleepy #pet-root{animation-duration:4.6s}
+  .state-sleepy #tail{animation-duration:4.4s}
+  .state-sleepy #pet-rock{animation:droop 4.6s ease-in-out infinite}
+  @keyframes droop{0%,100%{transform:rotate(0)}55%{transform:rotate(1.5deg)}}
+  .state-sleeping #pet-root{animation-duration:5.8s}
+  .state-sleeping #shadow{animation-duration:5.8s}
+  .state-sleeping #tail{animation:none;transform:rotate(-5deg)}
+  .state-sleeping #ear-l{animation:none;transform:rotate(-6deg)}
+  .state-sleeping #ear-r{transform:rotate(6deg)}
+  .state-sleeping #pet-rock{animation:none}
+  .state-missyou #tail{animation-duration:4.6s}
+  .state-alert #pet-root{animation-duration:2.1s}
+  .state-alert #pet-rock{animation:none;transform:rotate(-1.6deg)}
+  .state-alert #ear-l{animation:none;transform:rotate(9deg) translateY(-3px)}
+  .state-alert #ear-r{transform:rotate(-9deg) translateY(-3px)}
+  .state-alert #tail{animation:none;transform:rotate(16deg)}
+  .blush{transition:all .3s;transform-origin:50% 50%}
+
+  /* ── 特效层 ── */
+  .fx-spark text{transform-origin:50% 50%}
+  .fx-spark .s1{animation:spark 1.5s ease-in-out infinite}
+  .fx-spark .s2{animation:spark 1.5s .55s ease-in-out infinite}
+  @keyframes spark{0%,100%{opacity:0;transform:scale(.3) rotate(0)}40%{opacity:1;transform:scale(1.1) rotate(18deg)}70%{opacity:.6}}
+  .fx-zzz .z1{animation:zf 3.8s ease-in-out infinite}
+  .fx-zzz .z2{animation:zf 3.8s 1.2s ease-in-out infinite}
+  .fx-zzz .z3{animation:zf 3.8s 2.4s ease-in-out infinite}
+  @keyframes zf{0%{opacity:0;transform:translateY(6px)}25%{opacity:.9}60%{opacity:.5}100%{opacity:0;transform:translateY(-14px)}}
+  .fx-heart text{animation:hf 3.4s ease-in-out infinite}
+  @keyframes hf{0%{opacity:0;transform:translateY(4px) scale(.8)}30%{opacity:.95;transform:translateY(-4px) scale(1)}100%{opacity:0;transform:translateY(-16px) scale(.92)}}
+  .fx-alert text{animation:ap .55s cubic-bezier(.2,1.6,.4,1) both, abob 1.6s .55s ease-in-out infinite}
+  @keyframes ap{from{opacity:0;transform:scale(0)}to{opacity:1;transform:scale(1)}}
+  @keyframes abob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<div class="wrap">
+
+  <!-- ═══ 左：舞台 ═══ -->
+  <div class="stage-col">
+    <div class="eyebrow">MPET · 形象穿刺 SPIKE-01 · SVG-FIRST</div>
+    <h1><span class="nm">「泡沫」</span>圆滚滚的橘色小狐狸 · 幼崽态</h1>
+    <div class="sub">基因 = 参数 ｜ 状态 = 表情变体 ｜ 动画 = 部件级 —— spec §8 的活证据</div>
+
+    <div class="stage">
+      <svg class="pet state-idle" id="pet" viewBox="0 0 340 340" aria-label="泡沫">
+        <!-- 地面阴影 -->
+        <ellipse id="shadow" cx="170" cy="305" rx="80" ry="11" fill="#060A16" opacity=".5"/>
+        <g id="pet-root">
+          <g id="pet-rock">
+            <g id="pet-bounce">
+
+              <!-- 尾巴（球链法：稳健的蓬松感） -->
+              <g id="tail">
+                <circle cx="252" cy="212" r="33" fill="var(--fur-deep)"/>
+                <circle cx="277" cy="177" r="25" fill="var(--fur-deep)"/>
+                <circle cx="290" cy="148" r="18" fill="var(--cream)"/>
+              </g>
+
+              <!-- 身体（幼崽=一颗团子） -->
+              <g id="body">
+                <ellipse cx="170" cy="200" rx="92" ry="88" fill="var(--fur)"/>
+                <ellipse cx="148" cy="148" rx="56" ry="38" fill="#FFFFFF" opacity=".08"/>
+                <ellipse cx="170" cy="251" rx="46" ry="32" fill="var(--cream)"/>
+                <ellipse cx="138" cy="282" rx="16" ry="10" fill="var(--fur-deep)"/>
+                <ellipse cx="202" cy="282" rx="16" ry="10" fill="var(--fur-deep)"/>
+              </g>
+
+              <!-- 耳朵 -->
+              <g id="ears">
+                <g id="ear-l">
+                  <path d="M104,138 C98,100 110,72 126,75 C144,79 150,104 145,130 Q124,142 104,138 Z" fill="var(--fur)"/>
+                  <path d="M114,131 C111,104 119,86 128,88 C138,91 141,108 138,126 Q126,134 114,131 Z" fill="var(--ear-in)"/>
+                  <circle cx="122" cy="80" r="7" fill="var(--fur-deep)"/>
+                </g>
+                <g id="ear-r">
+                  <path d="M236,138 C242,100 230,72 214,75 C196,79 190,104 195,130 Q216,142 236,138 Z" fill="var(--fur)"/>
+                  <path d="M226,131 C229,104 221,86 212,88 C202,91 199,108 202,126 Q214,134 226,131 Z" fill="var(--ear-in)"/>
+                  <circle cx="218" cy="80" r="7" fill="var(--fur-deep)"/>
+                </g>
+              </g>
+
+              <!-- 脸 -->
+              <g id="face">
+                <ellipse cx="170" cy="208" rx="32" ry="21" fill="var(--cream)"/>
+
+                <!-- 眼睛变体 -->
+                <g id="eyes">
+                  <g class="eyes-open">
+                    <g class="blinker"><circle cx="132" cy="178" r="10" fill="var(--line)"/>
+                      <circle cx="128.5" cy="174.5" r="3.2" fill="#fff"/><circle cx="135.5" cy="182" r="1.6" fill="#fff" opacity=".85"/></g>
+                    <g class="blinker"><circle cx="208" cy="178" r="10" fill="var(--line)"/>
+                      <circle cx="204.5" cy="174.5" r="3.2" fill="#fff"/><circle cx="211.5" cy="182" r="1.6" fill="#fff" opacity=".85"/></g>
+                  </g>
+                  <g class="eyes-happy" fill="none" stroke="var(--line)" stroke-width="5.5" stroke-linecap="round">
+                    <path d="M120,179 Q132,165 144,179"/><path d="M196,179 Q208,165 220,179"/>
+                  </g>
+                  <g class="eyes-sleepy">
+                    <path d="M121,177 A11,11 0 0 0 143,177 Z" fill="var(--line)"/>
+                    <path d="M119,176 L145,176" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
+                    <path d="M197,177 A11,11 0 0 0 219,177 Z" fill="var(--line)"/>
+                    <path d="M195,176 L221,176" stroke="var(--line)" stroke-width="4" stroke-linecap="round"/>
+                  </g>
+                  <g class="eyes-closed" fill="none" stroke="var(--line)" stroke-width="5" stroke-linecap="round">
+                    <path d="M121,179 Q132,188 143,179"/><path d="M197,179 Q208,188 219,179"/>
+                  </g>
+                  <g class="eyes-up">
+                    <g class="blinker"><circle cx="129" cy="174" r="10" fill="var(--line)"/>
+                      <circle cx="125.5" cy="170.5" r="3" fill="#fff"/><circle cx="132.5" cy="178" r="1.5" fill="#fff" opacity=".85"/></g>
+                    <g class="blinker"><circle cx="205" cy="174" r="10" fill="var(--line)"/>
+                      <circle cx="201.5" cy="170.5" r="3" fill="#fff"/><circle cx="208.5" cy="178" r="1.5" fill="#fff" opacity=".85"/></g>
+                  </g>
+                  <g class="eyes-wide">
+                    <circle cx="132" cy="178" r="11.5" fill="var(--line)"/><circle cx="128" cy="173.5" r="2.4" fill="#fff"/>
+                    <circle cx="208" cy="178" r="11.5" fill="var(--line)"/><circle cx="204" cy="173.5" r="2.4" fill="#fff"/>
+                  </g>
+                </g>
+
+                <!-- 鼻子 -->
+                <ellipse cx="170" cy="198" rx="5.5" ry="4" fill="#4A332B"/>
+
+                <!-- 嘴巴变体 -->
+                <g id="mouth">
+                  <path class="m-idle" d="M156,209 q7,7 14,0 q7,7 14,0" fill="none" stroke="#4A332B" stroke-width="3.2" stroke-linecap="round"/>
+                  <g class="m-happy">
+                    <path d="M157,207 Q170,226 183,207 Z" fill="#5C3A30" stroke="#5C3A30" stroke-width="3" stroke-linejoin="round"/>
+                    <ellipse cx="170" cy="213" rx="5" ry="3" fill="#FF8E9E"/>
+                  </g>
+                  <ellipse class="m-o" cx="170" cy="210" rx="4.5" ry="5.5" fill="#5C3A30"/>
+                  <path class="m-sleep" d="M162,210 Q170,214 178,210" fill="none" stroke="#4A332B" stroke-width="3" stroke-linecap="round"/>
+                </g>
+
+                <!-- 腮红 -->
+                <ellipse class="blush" cx="112" cy="200" rx="13" ry="8" fill="var(--blush)" opacity=".5"/>
+                <ellipse class="blush" cx="228" cy="200" rx="13" ry="8" fill="var(--blush)" opacity=".5"/>
+              </g>
+
+              <!-- 特效层 -->
+              <g id="fx" font-family="PingFang SC, sans-serif">
+                <g class="fx-spark" fill="#FFD23F">
+                  <text class="s1" x="92" y="112" font-size="22">✦</text>
+                  <text class="s2" x="246" y="96" font-size="15">✦</text>
+                </g>
+                <g class="fx-zzz" fill="#BFD3FF" font-weight="600">
+                  <text class="z1" x="236" y="122" font-size="15">z</text>
+                  <text class="z2" x="251" y="102" font-size="19">z</text>
+                  <text class="z3" x="268" y="80"  font-size="24">z</text>
+                </g>
+                <g class="fx-heart" fill="var(--blush)">
+                  <text x="240" y="120" font-size="20">♡</text>
+                </g>
+                <g class="fx-alert" fill="#FFD23F" font-weight="800">
+                  <text x="238" y="92" font-size="38">!</text>
+                </g>
+              </g>
+
+            </g>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <div class="note" id="note">……（尾巴慢悠悠地晃） <em>—— 待机中，偶尔抖一下耳朵</em></div>
+  </div>
+
+  <!-- ═══ 右：观察记录 ═══ -->
+  <div class="rail">
+    <div class="card">
+      <h3>状态 · 表情变体</h3>
+      <div class="states" id="states">
+        <button data-s="idle" class="on">🌤 平静</button>
+        <button data-s="happy">✨ 开心</button>
+        <button data-s="sleepy">🥱 犯困</button>
+        <button data-s="missyou">🌙 想你</button>
+        <button data-s="sleeping">💤 睡着</button>
+        <button data-s="alert">❗ 警觉</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>基因组 · GENOME</h3>
+      <div class="gene">{
+  <span class="k">"name"</span>:  <span class="v">"泡沫"</span>,
+  <span class="k">"stage"</span>: <span class="v">"幼崽"</span>,
+  <span class="k">"genome"</span>: {
+    <span class="k">"furHue"</span>: <span class="hue" id="hueVal">28</span>,
+    <span class="k">"ears"</span>:   <span class="v">"round-tri"</span>,
+    <span class="k">"eyes"</span>:   <span class="v">"round-XL"</span>,
+    <span class="k">"tail"</span>:   <span class="v">"fluffy-comma"</span>,
+    <span class="k">"blush"</span>:  <span class="v">true</span>
+  }
+}</div>
+      <div class="slider-row">
+        <label>体色基因</label>
+        <input type="range" id="hue" min="0" max="340" value="28">
+      </div>
+    </div>
+    <div class="foot">MPET SOUL SPEC §8 · SPIKE-01</div>
+  </div>
+</div>
+
+<script>
+  const pet = document.getElementById('pet');
+  const note = document.getElementById('note');
+  const NOTES = {
+    idle:     '……（尾巴慢悠悠地晃） <em>—— 待机中，偶尔抖一下耳朵</em>',
+    happy:    '「嘿嘿！你看我你看我！」 <em>—— 弹跳 + 眯眯眼 + 星星</em>',
+    sleepy:   '「唔……眼皮好重……」 <em>—— 呼吸变慢，脑袋一点一点的</em>',
+    missyou:  '「你什么时候回来呀……」 <em>—— 望着门口的方向</em>',
+    sleeping: 'Zzz…… <em>—— 又慢又深的呼吸，耳朵和尾巴都松了</em>',
+    alert:    '「！有动静！是不是有事找你！」 <em>—— 耳朵立起来，尾巴定住</em>'
+  };
+  document.getElementById('states').addEventListener('click', e=>{
+    const b = e.target.closest('button'); if(!b) return;
+    document.querySelectorAll('.states button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    pet.setAttribute('class', 'pet state-' + b.dataset.s);
+    note.style.opacity = 0;
+    setTimeout(()=>{ note.innerHTML = NOTES[b.dataset.s]; note.style.opacity = 1; }, 160);
+  });
+  note.style.transition = 'opacity .16s';
+  const hue = document.getElementById('hue'), hv = document.getElementById('hueVal');
+  hue.addEventListener('input', ()=>{
+    document.documentElement.style.setProperty('--fur-hue', hue.value);
+    hv.textContent = hue.value;
+  });
+</script>
+</body>
+</html>
