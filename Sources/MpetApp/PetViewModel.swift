@@ -30,6 +30,7 @@ final class PetViewModel: ObservableObject {
         case "happy": return "happy"
         case "sleepy": return "sleepy"
         case "missing": return "missyou"
+        case "sleeping": return "sleeping"
         default: return "idle"
         }
     }
