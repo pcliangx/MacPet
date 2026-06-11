@@ -14,7 +14,11 @@ public actor DaemonSoul {
     private var lastPresenceCheck: Date
     public private(set) var interactionCount: Int = 0
 
-    public init(store: StateStore, clock: SoulClock,
+    // ── Growth (M3) ──
+    private var growthState: GrowthState
+    private let growthStore: GrowthStateStore
+
+    public init(store: StateStore, growthStore: GrowthStateStore, clock: SoulClock,
                 watchedBundleIDs: [String], nudgeBudgetPerHour: Int, genome: Genome) {
         self.store = store; self.clock = clock
         self.watchedBundleIDs = Set(watchedBundleIDs)
@@ -24,6 +28,8 @@ public actor DaemonSoul {
         self.attentionSeeker = AttentionSeeker(budgetPerHour: 2)
         self.state = store.load()
         self.lastPresenceCheck = clock.now
+        self.growthStore = growthStore
+        self.growthState = growthStore.load()
     }
 
     public func noteInteraction() {
@@ -105,8 +111,71 @@ public actor DaemonSoul {
     public func statusSnapshot(attention: Attention) -> [String: JSONValue] {
         ["mood": .string(state.mood.rawValue),
          "attention": .string(attention.rawValue),
-         "stage": .string("baby"),
+         "stage": .string("\(growthState.stage)"),
+         "totalXP": .number(Double(growthState.totalXP)),
+         "streakDays": .number(Double(growthState.streakDays)),
          "version": .string(SoulCoreInfo.version),
          "lastInteraction": state.lastInteractionAt.map { .number($0.timeIntervalSince1970) } ?? .null]
+    }
+
+    // ── Growth (M3) ──
+
+    public var currentGrowth: GrowthState { growthState }
+
+    public func applyXP(_ amount: Int) {
+        growthState.todayXP += amount
+        growthState.totalXP += amount
+        let newStage = GrowthState.stageForXP(growthState.totalXP)
+        if newStage > growthState.stage {
+            growthState.stage = newStage
+            // TODO: emit evolve directive (handled by caller)
+        }
+        try? growthStore.save(growthState)
+    }
+
+    public func addBond(_ interaction: EconomyEngine.BondInteraction) {
+        growthState.bond += EconomyEngine.bondGain(for: interaction)
+        try? growthStore.save(growthState)
+    }
+
+    public func applyFuelReport(raw: Double) {
+        let xp = EconomyEngine.calcXPGain(
+            fuelRaw: raw,
+            streakMultiplier: EconomyEngine.streakMultiplier(days: growthState.streakDays),
+            todayXPSoFar: growthState.todayXP
+        )
+        if xp > 0 { applyXP(xp) }
+    }
+
+    public func dailyRolloverIfNeeded() {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = .current
+        let today = f.string(from: clock.now)
+        guard today != growthState.todayDate else { return }
+        // Update streak
+        if let lastDay = growthState.lastActiveDay.isEmpty ? nil : growthState.lastActiveDay {
+            let df = DateFormatter(); df.dateFormat = "yyyy-MM-dd"
+            if let lastDate = df.date(from: lastDay),
+               let expected = Calendar.current.date(byAdding: .day, value: 1, to: lastDate),
+               f.string(from: expected) == today {
+                growthState.streakDays += 1
+            } else {
+                growthState.streakDays = 1
+            }
+        } else {
+            growthState.streakDays = 1
+        }
+        growthState.lastActiveDay = growthState.todayDate
+        growthState.todayDate = today
+        growthState.todayXP = 0
+        try? growthStore.save(growthState)
+    }
+
+    public func growthSnapshot() -> [String: JSONValue] {
+        ["stage": .string("\(growthState.stage)"),
+         "totalXP": .number(Double(growthState.totalXP)),
+         "todayXP": .number(Double(growthState.todayXP)),
+         "bond": .number(Double(growthState.bond)),
+         "streakDays": .number(Double(growthState.streakDays)),
+         "progress": .number(growthState.progressToNext)]
     }
 }

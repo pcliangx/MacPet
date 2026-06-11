@@ -16,8 +16,11 @@ try? FileManager.default.createDirectory(at: soulDir, withIntermediateDirectorie
 try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: supportDir.path)
 
 let store = StateStore(directory: soulDir, clock: clock)
+let growthDir = supportDir.appendingPathComponent("soul/growth")
+try? FileManager.default.createDirectory(at: growthDir, withIntermediateDirectories: true)
+let growthStore = GrowthStateStore(directory: growthDir, clock: clock)
 let daemon = DaemonSoul(
-    store: store, clock: clock,
+    store: store, growthStore: growthStore, clock: clock,
     watchedBundleIDs: config.watchedBundleIDs,
     nudgeBudgetPerHour: config.nudgeBudgetPerHour,
     genome: .default
@@ -74,6 +77,7 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
             reply(.statusOK(snapshot))
         case .chatUser(let text):
             await daemon.noteInteraction()
+            await daemon.addBond(.chat)
             let att = currentAttention()
             await daemon.recomputeMood(attention: att)
             let mood = await daemon.currentMood
@@ -97,6 +101,8 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
                 AbsentBodyNotifier.notify(title: "🦊 mpet", body: title)
             }
             await handlePercept(p)
+        case .fuelReport(_, let raw):
+            await daemon.applyFuelReport(raw: raw)
         case .actionInvoke(let eventId, let actionId):
             print("🎯 affordance 回调：\(eventId)/\(actionId)")
         case .bye: break
@@ -108,6 +114,7 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
 Task {
     while true {
         try? await Task.sleep(nanoseconds: 60_000_000_000)  // 60 秒
+        await daemon.dailyRolloverIfNeeded()
         let snap = PresenceSensorMac.snapshot(watched: Set(config.watchedBundleIDs))
         let idleMinutes = Int(snap.idleSeconds / 60)
         await daemon.updateLifecycle(idleMinutes: idleMinutes)

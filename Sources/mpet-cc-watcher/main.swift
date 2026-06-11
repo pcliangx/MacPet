@@ -38,6 +38,14 @@ await monitor.setHandler { event in
     let percept = event.toPercept()
     Task { await client.send(.senseEvent(percept)) }
     print("📡 CC: \(event.hookEventName) → \(percept.kind) (\(percept.priority.rawValue))")
+
+    // M3 fuel: estimate output tokens from CC tool use
+    if event.hookEventName == "PostToolUse" {
+        let estimatedTokens: Double = 500  // rough estimate per tool call
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = .current
+        let date = f.string(from: Date())
+        Task { await client.send(.fuelReport(date: date, raw: estimatedTokens)) }
+    }
 }
 
 await client.setMessageHandler { msg in
