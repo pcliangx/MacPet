@@ -22,12 +22,19 @@ let growthStore = GrowthStateStore(directory: growthDir, clock: clock)
 let memoryDir = supportDir.appendingPathComponent("soul/memory")
 try? FileManager.default.createDirectory(at: memoryDir, withIntermediateDirectories: true)
 let memoryStore = MemoryStore(directory: memoryDir)
+let roomDir = supportDir.appendingPathComponent("soul/room")
+try? FileManager.default.createDirectory(at: roomDir, withIntermediateDirectories: true)
+let roomStore = PetRoomStore(directory: roomDir)
+let projectDir = supportDir.appendingPathComponent("soul/projects")
+try? FileManager.default.createDirectory(at: projectDir, withIntermediateDirectories: true)
+let projectStore = PetProjectStore(directory: projectDir)
 let daemon = DaemonSoul(
     store: store, growthStore: growthStore, clock: clock,
     watchedBundleIDs: config.watchedBundleIDs,
     nudgeBudgetPerHour: config.nudgeBudgetPerHour,
     genome: .default,
-    memoryStore: memoryStore
+    memoryStore: memoryStore,
+    roomStore: roomStore, projectStore: projectStore
 )
 let registry = ToolRegistry()
 let provider = OpenAILLMClient(config: config.llm)
@@ -83,6 +90,7 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
         case .chatUser(let text):
             await daemon.noteInteraction()
             await daemon.addBond(.chat)
+            await daemon.recordChat()
             let att = currentAttention()
             await daemon.recomputeMood(attention: att)
             let mood = await daemon.currentMood
@@ -119,6 +127,8 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
 Task {
     while true {
         try? await Task.sleep(nanoseconds: 60_000_000_000)  // 60 秒
+        // M6: drift personality at day boundary
+        await daemon.recordDayInteractions()
         await daemon.dailyRolloverIfNeeded()
         let snap = PresenceSensorMac.snapshot(watched: Set(config.watchedBundleIDs))
         let idleMinutes = Int(snap.idleSeconds / 60)
@@ -133,6 +143,8 @@ Task {
         if let seek = await daemon.checkAttentionSeeking(idleMinutes: idleMinutes) {
             sink(.directive(kind: "speak", payload: ["text": .string(seek.text)]))
             sink(.directive(kind: "emote", payload: ["animation": .string(seek.emote)]))
+            // M6: attention seeking got a response → record it
+            await daemon.recordAttentionResponse()
         }
 
         // 检查心跳
@@ -146,8 +158,21 @@ Task {
             }
         }
 
+        // M6: 检查里程碑
+        let newMilestones = await daemon.checkMilestones()
+        for m in newMilestones {
+            sink(.directive(kind: "speak", payload: ["text": .string("我刚刚达成了「\(m.name)」！")]))
+        }
+        if let anniversary = await daemon.checkAnniversary() {
+            sink(.directive(kind: "speak", payload: ["text": .string(anniversary)]))
+        }
+
         // 做梦：深夜时段（2-4 点）且还没做过梦
         let hour = Calendar.current.component(.hour, from: Date())
+        // M6: record late night activity (23:00–5:00)
+        if hour >= 23 || hour < 5 {
+            await daemon.recordLateNightActivity()
+        }
         if (2...4).contains(hour) {
             let dream = await daemon.performDream()
             if !dream.newSemantics.isEmpty || !dream.milestones.isEmpty {

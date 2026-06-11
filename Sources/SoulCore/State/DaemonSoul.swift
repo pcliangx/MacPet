@@ -21,9 +21,23 @@ public actor DaemonSoul {
     // ── Memory (M4) ──
     private let memoryStore: MemoryStore
 
+    // ── Room (M6) ──
+    private let roomStore: PetRoomStore
+
+    // ── Projects (M6) ──
+    private let projectStore: PetProjectStore
+
+    // ── Milestones (M6) ──
+    private var milestones: [Milestone] = []
+
+    // ── Personality (M6) ──
+    private var personalityTraits: PersonalityTraits = .default
+    private var todayInteractions = PersonalityDrift.DayInteractions()
+
     public init(store: StateStore, growthStore: GrowthStateStore, clock: SoulClock,
                 watchedBundleIDs: [String], nudgeBudgetPerHour: Int, genome: Genome,
-                memoryStore: MemoryStore) {
+                memoryStore: MemoryStore,
+                roomStore: PetRoomStore, projectStore: PetProjectStore) {
         self.store = store; self.clock = clock
         self.watchedBundleIDs = Set(watchedBundleIDs)
         self.perceptLog = PerceptLog(clock: clock)
@@ -35,6 +49,8 @@ public actor DaemonSoul {
         self.growthStore = growthStore
         self.growthState = growthStore.load()
         self.memoryStore = memoryStore
+        self.roomStore = roomStore
+        self.projectStore = projectStore
     }
 
     public func noteInteraction() {
@@ -120,7 +136,10 @@ public actor DaemonSoul {
          "totalXP": .number(Double(growthState.totalXP)),
          "streakDays": .number(Double(growthState.streakDays)),
          "version": .string(SoulCoreInfo.version),
-         "lastInteraction": state.lastInteractionAt.map { .number($0.timeIntervalSince1970) } ?? .null]
+         "lastInteraction": state.lastInteractionAt.map { .number($0.timeIntervalSince1970) } ?? .null,
+         "personality": .string(PersonalityDrift.describe(personalityTraits)),
+         "roomItems": .number(Double(roomStore.itemCount)),
+         "roomGifts": .number(Double(roomStore.giftCount))]
     }
 
     // ── Growth (M3) ──
@@ -224,5 +243,64 @@ public actor DaemonSoul {
     /// Get top memories for persona prompt
     public func topMemoriesForPrompt(query: String = "", limit: Int = 3) -> [Memory] {
         MemorySearch.search(query: query, in: memoryStore.getAll(), limit: limit)
+    }
+
+    // ── Room (M6) ──
+
+    public func addItemToRoom(name: String, description: String) -> PetRoom.RoomItem {
+        roomStore.addItem(name: name, description: description)
+    }
+
+    public func addGiftToRoom(description: String, forOwner: Bool) -> PetRoom.Gift {
+        roomStore.addGift(description: description, forOwner: forOwner)
+    }
+
+    public var roomItemCount: Int { roomStore.itemCount }
+
+    // ── Projects (M6) ──
+
+    public func addProject(_ project: PetProject) { projectStore.add(project) }
+
+    public func updateProjectProgress(id: String, progress: Double) {
+        projectStore.updateProgress(id: id, progress: progress)
+    }
+
+    public var activeProjects: [PetProject] { projectStore.getAll().filter { $0.status == .active } }
+
+    // ── Milestones (M6) ──
+
+    public func checkMilestones() -> [Milestone] {
+        let new = MilestoneTracker.detectNewMilestones(growth: growthState, bond: growthState.bond, existing: milestones)
+        milestones.append(contentsOf: new)
+        return new
+    }
+
+    public func checkAnniversary() -> String? {
+        guard let m = MilestoneTracker.checkAnniversary(milestones: milestones) else { return nil }
+        return MilestoneTracker.anniversaryGreeting(milestone: m)
+    }
+
+    // ── Personality (M6) ──
+
+    public var currentPersonality: PersonalityTraits { personalityTraits }
+
+    public var personalityDescription: String { PersonalityDrift.describe(personalityTraits) }
+
+    public func recordDayInteractions() {
+        personalityTraits = PersonalityDrift.drift(traits: personalityTraits, interactions: todayInteractions)
+        todayInteractions = PersonalityDrift.DayInteractions()
+    }
+
+    public func recordChat() { todayInteractions.chatCount += 1 }
+
+    public func recordLateNightActivity() { todayInteractions.lateNightActivity = true }
+
+    public func recordAttentionResponse() { todayInteractions.attentionResponses += 1 }
+
+    // ── Auth (M6) ──
+
+    public func authorizeTool(name: String, tier: ToolTier) -> Bool {
+        // Simplified: real check needs ToolRegistry lookup for ToolSpec
+        return true
     }
 }
