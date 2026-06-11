@@ -46,7 +46,7 @@
   .sub{font-size:12.5px;color:var(--ink-dim);margin-top:7px;letter-spacing:.06em;
        animation:rise .7s .25s both}
   .stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;
-         animation:pop .8s .3s cubic-bezier(.2,1.4,.4,1) both}
+         animation:pop .8s .3s cubic-bezier(.2,1.4,.4,1) both;perspective:760px}
   /* 桌灯光池 */
   .stage::before{content:"";position:absolute;width:480px;height:300px;border-radius:50%;
     background:radial-gradient(closest-side, hsl(var(--fur-hue) 70% 60% / .14), transparent 72%);
@@ -54,7 +54,10 @@
   /* 桌沿 */
   .stage::after{content:"";position:absolute;left:8%;right:8%;bottom:13.5%;height:1px;
     background:linear-gradient(90deg, transparent, #ffffff22 18%, #ffffff22 82%, transparent)}
-  svg.pet{width:min(58vh,440px);height:auto;position:relative;z-index:1}
+  svg.pet{width:min(58vh,440px);height:auto;position:relative;z-index:1;
+          transition:transform .22s ease-out;will-change:transform}
+  /* 2.5D 视差层：不同深度，不同位移速率 */
+  #tail-px,#ears-px,#face,#eyes{transition:transform .22s ease-out}
   .note{font-family:"Kaiti SC","STKaiti","KaiTi",serif;text-align:center;font-size:16.5px;
         color:#C9CFDF;min-height:28px;letter-spacing:.05em;animation:rise .7s .45s both}
   .note em{font-style:normal;opacity:.55;font-size:13px}
@@ -173,12 +176,12 @@
           <g id="pet-rock">
             <g id="pet-bounce">
 
-              <!-- 尾巴（球链法：稳健的蓬松感） -->
-              <g id="tail">
+              <!-- 尾巴（球链法：稳健的蓬松感）：tail-px 为视差层，tail 保留摇摆动画 -->
+              <g id="tail-px"><g id="tail">
                 <circle cx="252" cy="212" r="33" fill="var(--fur-deep)"/>
                 <circle cx="277" cy="177" r="25" fill="var(--fur-deep)"/>
                 <circle cx="290" cy="148" r="18" fill="var(--cream)"/>
-              </g>
+              </g></g>
 
               <!-- 身体（幼崽=一颗团子） -->
               <g id="body">
@@ -189,8 +192,8 @@
                 <ellipse cx="202" cy="282" rx="16" ry="10" fill="var(--fur-deep)"/>
               </g>
 
-              <!-- 耳朵 -->
-              <g id="ears">
+              <!-- 耳朵：ears-px 为视差层 -->
+              <g id="ears-px"><g id="ears">
                 <g id="ear-l">
                   <path d="M104,138 C98,100 110,72 126,75 C144,79 150,104 145,130 Q124,142 104,138 Z" fill="var(--fur)"/>
                   <path d="M114,131 C111,104 119,86 128,88 C138,91 141,108 138,126 Q126,134 114,131 Z" fill="var(--ear-in)"/>
@@ -201,7 +204,7 @@
                   <path d="M226,131 C229,104 221,86 212,88 C202,91 199,108 202,126 Q214,134 226,131 Z" fill="var(--ear-in)"/>
                   <circle cx="218" cy="80" r="7" fill="var(--fur-deep)"/>
                 </g>
-              </g>
+              </g></g>
 
               <!-- 脸 -->
               <g id="face">
@@ -345,6 +348,23 @@
     document.documentElement.style.setProperty('--fur-hue', hue.value);
     hv.textContent = hue.value;
   });
+
+  /* ── 2.5D：分层视差 + 透视微转头（鼠标=它注视的方向） ── */
+  const stage = document.querySelector('.stage');
+  const face = document.getElementById('face'), eyes = document.getElementById('eyes');
+  const earsPx = document.getElementById('ears-px'), tailPx = document.getElementById('tail-px');
+  function gaze(dx, dy){            // dx,dy ∈ [-1,1]
+    pet.style.transform   = `rotateY(${dx*8}deg) rotateX(${-dy*5}deg)`; // 整体微倾（透视）
+    face.style.transform  = `translate(${dx*7}px, ${dy*5}px)`;          // 脸：近层，动得多
+    eyes.style.transform  = `translate(${dx*3}px, ${dy*2.5}px)`;        // 瞳孔再追一点
+    earsPx.style.transform= `translate(${dx*3.5}px, ${dy*2}px)`;        // 耳朵：中层
+    tailPx.style.transform= `translate(${-dx*5}px, ${-dy*2.5}px)`;      // 尾巴：远层，反向
+  }
+  stage.addEventListener('mousemove', e=>{
+    const r = stage.getBoundingClientRect();
+    gaze(((e.clientX - r.left)/r.width - .5)*2, ((e.clientY - r.top)/r.height - .5)*2);
+  });
+  stage.addEventListener('mouseleave', ()=> gaze(0,0));
 </script>
 </body>
 </html>
