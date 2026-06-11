@@ -25,12 +25,13 @@ public actor Mind {
     public func chat(_ text: String, mood: Mood, attention: Attention,
                      recent: [Percept], onDelta: @escaping @Sendable (String) -> Void) async throws {
         backgroundTask?.cancel()
+        let rollbackMark = history.count
         history.append(.user(text))
         do {
             try await runAgentLoop(mood: mood, attention: attention, recent: recent,
                                    extra: nil, onDelta: onDelta)
         } catch {
-            if history.last?.role == .user { history.removeLast() }
+            if history.count > rollbackMark { history.removeSubrange(rollbackMark...) }
             throw error
         }
     }
@@ -44,6 +45,7 @@ public actor Mind {
         }
         backgroundTask = t
         await t.value
+        backgroundTask = nil
     }
 
     private func runBackground(reason: String, mood: Mood, attention: Attention, recent: [Percept]) async {

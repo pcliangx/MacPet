@@ -54,4 +54,26 @@ final class MindTests: XCTestCase {
         let history = await mind.historyForTesting
         XCTAssertFalse(history.contains { $0.role == .user })
     }
+
+    func testRollbackRemovesPartialToolExchangeOnLaterFailure() async {
+        actor FlakyProvider: LLMProviding {
+            private var n = 0
+            func complete(messages: [ChatMessage], tools: [ToolSpec],
+                          onDelta: @escaping @Sendable (String) -> Void) async throws -> ChatMessage {
+                n += 1
+                if n == 1 {
+                    return ChatMessage(role: .assistant, content: nil,
+                                       toolCalls: [ToolCall(id: "c1", name: "speak", arguments: #"{"text":"hi"}"#)])
+                }
+                throw OpenAILLMClient.LLMError.http(500)   // 第二轮（喂回工具结果后）失败
+            }
+        }
+        let mind = await makeMind(provider: FlakyProvider(), sink: { _ in })
+        do {
+            try await mind.chat("hi", mood: .calm, attention: .attending, recent: [], onDelta: { _ in })
+            XCTFail("should throw")
+        } catch {}
+        let history = await mind.historyForTesting
+        XCTAssertTrue(history.isEmpty, "partial tool exchange + user turn must all roll back; got \(history.map(\.role))")
+    }
 }
