@@ -3,7 +3,7 @@
 - **版本**：v2.5（理想态重规划 · soul-first · iroh P2P 社交 · 插件外设标准 · 核心去 CC 化 · **SVG-first 形象与动画**）
 - **日期**：2026-06-11
 - **状态**：草案，待用户审阅
-- **仓库**：本仓库（`DevTools/MacPet`）为全新重建仓库；旧仓库 `DevApps/MacPet` 保留为零件库，不再演进
+- **仓库**：本仓库（`DevTools/MacPet`）为全新重建仓库；~~旧仓库为零件库~~ → **2026-06-11 拍板：旧仓库废弃，全部从零重写，不引用任何旧代码**（发布阶梯中"移植旧件"列随之作废，对应组件改为全新 TDD 实现）
 - **定位**：自用优先，保留产品化可能
 - **前史**：本文档取代旧仓库 `docs/PRD.md`（v1.1）。v1.1 的 review 议题处置见附录 A
 
@@ -355,7 +355,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 
 ## 13. 发布阶梯（每级都能跑）
 
-| 里程碑 | 交付 | 移植旧件（来自 `DevApps/MacPet`） |
+| 里程碑 | 交付 | ~~移植旧件~~（已作废：全部重写） |
 |---|---|---|
 | **M0 灵魂胚胎** | daemon + agent 循环（OpenAI 兼容工具调用 + 能力探测）+ 感知收件箱 + 反射弧（注意力×优先级通用编排）+ **外设协议族 v0（感官/工具/口粮/affordance 四面齐）** | OpenAIChatClient、AttentionResolver |
 | **M1 借壳还魂**（首个可玩版） | 旧身体件接上灵魂 + **cc-watcher 插件 v0**（hook+spool+喊人+多会话+点击回归）——桌面有它、能聊、守望恢复，心脏已换且插件标准开始吃狗粮 | 身体件（PetWindow/PetRenderer/Bubble、ChatPanel、StatusMenu、Settings、Onboarding）；入插件：EventParser、SessionRegistry、ReturnRouter、mpet-hook + HookInstaller |
