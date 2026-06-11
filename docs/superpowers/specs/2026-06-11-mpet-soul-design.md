@@ -16,7 +16,7 @@
 | 状态 | 里程碑 | 标签 / 计划 |
 |---|---|---|
 | ✅ | **M0 灵魂胚胎** | `v0.1.0-m0`，已合并 main；计划见 `docs/superpowers/plans/2026-06-11-m0-soul-embryo.md` |
-| ⬜ | M1 借壳还魂（首个可玩版） | 待 writing-plans |
+| ✅ | **M1 借壳还魂**（首个可玩版） | `v0.2.0-m1`；计划见 `docs/superpowers/plans/2026-06-12-m1-body-and-watcher.md` |
 | ⬜ | M2 它活了 | — |
 | ⬜ | M3 它开始长大 | — |
 | ⬜ | M4 它记得你 | — |
@@ -28,9 +28,11 @@
 
 **M0 实测在码的机制**（42 单测全绿，headless 端到端验收通过）：事件驱动 LLM agent 循环（OpenAI 兼容、流式、工具调用增量组装）· 反射弧（注意力×优先级喊人梯度）· 四心情引擎 · 阶段门控工具箱（`speak`/`emote`）· 人格合成 v0（基因+阶段+心情）· 唤醒策略（alert 直通/nudge 预算）· 一颗心并发（交互快车道抢占后台+失败回滚）· 外设 NDJSON 协议族 v0（感官/工具/口粮/affordance 信封全定义）· 在场感知 · 可注入时钟+跨天对账 · 原子写生命档案（自愈+7 日备份）· 端点能力探测 · 假 LLM 测试架。
 
+**M1 新增机制**（69 单测全绿）：`DaemonSoul` actor（消除 daemon 数据竞争 + mood 运行时回写）· `SoulClient` actor（NWConnection 客户端、自动重连、hello 握手）· `HookInstaller`（CC settings.json 幂等注入+备份+卸载）· `CCEvent` 防御式解析（Notification/PreToolUse/Stop/UserPromptSubmit → Percept 映射）· `CCSpoolMonitor`（spool 目录扫描 + 坏文件容忍）· `KeychainStore`（Security.framework API Key 安全存储）· `LaunchdInstaller`（LaunchAgent plist 生成/安装/卸载）· `MpetApp` macOS 桌面 App（SwiftUI + WKWebView SVGRenderer + ChatPanel + BubbleView + StatusMenu + SettingsPanel + Onboarding）· `mpet-cc-watcher` 插件可执行（hook 安装 + spool 监听 + soul.sock 中继 + affordance 回归）。
+
 > 阅读约定：受 M0 影响的章节标题带状态徽章（✅ 已交付 / 🚧 部分交付，含 M0 范围说明 / ⬜ 机制就位但功能留后续）——见 §5.1–5.4、§6.1、§8、§10.3、§12；其余无徽章章节整体属未来里程碑，状态以 §13 为准。
 
-**M1 启动前必修**（M0 最终评审标记）：① daemon `state` 并发竞争（M1 身体+cc-watcher 同连时咬人）；② `SoulState.mood` 已持久化但运行时未用。
+**M1 已兑现的 M0 遗留修复**：① daemon `state` 并发竞争 → `DaemonSoul` actor 串行化 ✅；② `SoulState.mood` 已持久化但运行时未用 → `recomputeMood()` 每次回写 ✅。
 
 ---
 
@@ -93,7 +95,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 ## 5. 灵魂架构
 
 ### 5.1 进程形态：灵魂是守护进程，其余皆外设　🚧
-> M0：daemon + soul.sock NDJSON 服务 ✅（**前台运行**，launchd 自启留 M1）；身体/信使/插件外设 ⬜。
+> M0：daemon + soul.sock NDJSON 服务 ✅（前台运行）。M1：身体 App（MpetApp）✅ + DaemonSoul actor ✅ + launchd 安装器 ✅；信使 ⬜（M7）；插件进程管理 ⬜（M9）。
 
 - **灵魂（soul daemon）**：launchd LaunchAgent 拉起——开机即活、崩溃复活、**App 关了照样活着**（夜里做梦、持续长大、你不在时过自己的小日子）。
 - **一切皆外设**：灵魂的所有外延 = 独立进程 + socket/stdio + NDJSON，按能力分类——
@@ -354,7 +356,8 @@ mpet 是住在你 Mac 上的**电子生命**。
 
 感官事件随时有效（那是环境）；插件爪子从**少年**起可用（与轻爪子同步，§6.1）。
 
-### 10.9 第一方旗舰插件：cc-watcher
+### 10.9 第一方旗舰插件：cc-watcher 🚧
+> M1：HookInstaller（幂等注入 CC settings.json）+ CCSpoolMonitor（spool 目录监听）+ CCEvent 防御式解析（→ Percept 映射）+ mpet-cc-watcher 可执行（连 soul.sock + affordance 回归）✅。进程管理/崩溃重启 ⬜（M9）；fuel 上报 ⬜（M3）。
 
 把 v1.1 时代的「照看 Claude Code」完整装进一个插件，**核心零耦合**：
 
@@ -394,7 +397,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | 状态 | 里程碑 | 交付 |
 |---|---|---|
 | ✅ | **M0 灵魂胚胎** | daemon + agent 循环（OpenAI 兼容工具调用 + 能力探测）+ 感知收件箱 + 反射弧（注意力×优先级通用编排）+ **外设协议族 v0（感官/工具/口粮/affordance 四面齐）**。`v0.1.0-m0`，42 单测全绿 |
-| ⬜ | **M1 借壳还魂**（首个可玩版） | 桌面身体 App 接上灵魂 + **cc-watcher 插件 v0**（hook+spool+喊人+多会话+点击回归）+ **设置面板 v0**（模型/Key→Keychain/人设/触发/外观）+ **launchd 一键安装**——桌面有它、能聊、守望恢复，心脏已换且插件标准开始吃狗粮。**含 M0 遗留两修**（§0） |
+| ✅ | **M1 借壳还魂**（首个可玩版） | 桌面身体 App 接上灵魂 + **cc-watcher 插件 v0**（hook+spool+喊人+多会话+点击回归）+ **设置面板 v0**（模型/Key→Keychain/人设/触发/外观）+ **launchd 一键安装**——桌面有它、能聊、守望恢复，心脏已换且插件标准开始吃狗粮。**含 M0 遗留两修** ✅。`v0.2.0-m1`，69 单测全绿 |
 | ⬜ | **M2 它活了** | 心情/睡觉/昼夜/待机完整 + 唤醒策略 + 求关注 + 回归问候 + **身体缺席降级兑现**（系统通知兜底、「醒来要说的话」回归叙旧，§5.1） |
 | ⬜ | **M3 它开始长大** | 核心经济（XP/羁绊/阶段工具门控/语言进化）+ cc-watcher 增配 **fuel 上报与回填画像** + **开发模式快进** + **成长可感知面**（状态菜单：阶段/今日 XP/streak；它偶尔自己说）+ 设置扩展：**伙食费透明**（§12#6） |
 | ⬜ | **M4 它记得你** | remember/recall + 做梦 + 日记 + 防说错 + 记忆面板 + **检索方案评估（含可选 embedding 端点）** + **生命档案导出/导入 v0**（§12#2） |
@@ -425,7 +428,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | 里程碑 | 主要实现章节 |
 |---|---|
 | ✅ **M0 灵魂胚胎** | §5.1 进程形态（daemon + soul.sock，前台运行）· §5.2 大脑（agent 循环/反射弧/唤醒策略/上下文分层/`speak`·`emote` 工具/一颗心）· §10.1–10.3 外设协议族 v0（信封定义）· §12 硬约束 #1 能力探测 / #2 原子写档案 / #5 可注入时钟 |
-| ⬜ **M1 借壳还魂** | §5.1 身体外设（桌面 App 投影 + launchd 一键安装）· §10.9 cc-watcher 第一方插件 · §5.2 感知器「工作脉搏」接入 · §11 关键体验（日常/被喊回来起步 + 设置面板 v0）· §12 #3 Keychain · §3 支柱 5「能力即陪伴」启程 |
+| ✅ **M1 借壳还魂** | §5.1 身体外设（MpetApp + DaemonSoul actor + LaunchdInstaller）· §10.9 cc-watcher 第一方插件（HookInstaller + CCSpoolMonitor + CCEvent + mpet-cc-watcher）· §5.2 感知器「工作脉搏」接入 · §11 关键体验（SVGRenderer + ChatPanel + BubbleView + StatusMenu + SettingsPanel + Onboarding）· §12 #3 Keychain（KeychainStore）· §3 支柱 5「能力即陪伴」启程 |
 | ⬜ **M2 它活了** | §5.2 反射弧（心情状态机/昼夜作息/待机小动作）· §5.1 身体缺席降级兑现（通知兜底/醒来叙旧）· §6.3 作息自适应 · §6.4 求关注 · §11 回归问候 · §3 支柱 1「活着」 |
 | ⬜ **M3 它开始长大** | §6.1 成长四维 · §6.2 经济模型（XP/羁绊/封顶）· §10.1 fuel 能力面 + §10.9 cc-watcher 口粮上报与回填 · §11 成长可感知面 · §12 #5 开发模式快进 / #6 伙食费透明 · §3 支柱 2「会长大」 |
 | ⬜ **M4 它记得你** | §7 记忆系统（情景/语义/做梦蒸馏/防说错/检索）· §5.2 `remember`·`recall`·`diary` 阶段工具 · §12 #2 生命档案导出/导入 v0 · §3 支柱 3「记得你」 |
