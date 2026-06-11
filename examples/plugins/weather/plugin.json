@@ -1,0 +1,15 @@
+{
+  "name": "weather",
+  "displayName": "天气感知",
+  "version": "0.1.0",
+  "kind": ["sense"],
+  "entry": { "type": "exec", "cmd": "./weather.sh" },
+  "permissions": ["network"],
+  "senses": [
+    { "id": "weather.changed", "priority": "ambient", "dailyBudget": 8 }
+  ],
+  "persona_hints": {
+    "toyName": "气象风向标",
+    "intro": "能闻出今天会不会下雨"
+  }
+}

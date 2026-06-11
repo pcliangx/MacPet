@@ -1,0 +1,15 @@
+{
+  "name": "dice",
+  "displayName": "骰子",
+  "version": "0.1.0",
+  "kind": ["tool"],
+  "entry": { "type": "exec", "cmd": "./dice.sh" },
+  "permissions": [],
+  "tools": [
+    { "name": "roll", "tier": "free-read" }
+  ],
+  "persona_hints": {
+    "toyName": "幸运骰子",
+    "intro": "拿不定主意的时候摇一摇"
+  }
+}

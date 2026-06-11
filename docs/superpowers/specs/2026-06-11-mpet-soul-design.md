@@ -24,9 +24,11 @@
 | ✅ | **M6 它有自己的人生** | `v0.7.0-m6`；计划见 `docs/superpowers/plans/2026-06-14-m6-own-life.md` |
 | ✅ | **M7 它有朋友了** | `v0.8.0-m7`；计划见 `docs/superpowers/plans/2026-06-14-m7-has-friends.md` |
 | ✅ | **M8 广场与朋友圈天梯** | `v0.9.0-m8`；计划见 `docs/superpowers/plans/2026-06-14-m8-plaza-ladder.md` |
-| ⬜ | M9 它收到了礼物 | — |
+| ✅ | **M9 它收到了礼物** | `v1.0.0-m9`；计划见 `docs/superpowers/plans/2026-06-14-m9-receives-gifts.md`。**全阶梯 M0–M9 交付完成** |
 
 **M0 实测在码的机制**（42 单测全绿，headless 端到端验收通过）：事件驱动 LLM agent 循环（OpenAI 兼容、流式、工具调用增量组装）· 反射弧（注意力×优先级喊人梯度）· 四心情引擎 · 阶段门控工具箱（`speak`/`emote`）· 人格合成 v0（基因+阶段+心情）· 唤醒策略（alert 直通/nudge 预算）· 一颗心并发（交互快车道抢占后台+失败回滚）· 外设 NDJSON 协议族 v0（感官/工具/口粮/affordance 信封全定义）· 在场感知 · 可注入时钟+跨天对账 · 原子写生命档案（自愈+7 日备份）· 端点能力探测 · 假 LLM 测试架。
+
+**M9 新增机制**（283 单测全绿，全阶梯完成）：`PluginManifest`（plugin.json 解析+校验+tier 申领限制：never/free-home 不可申领）· `PluginPermissions`（network/read/notify/fuel 权限模型，喂养权敏感单列）· `PluginProcessManager`（exec 拉起+崩溃重启 ≤3 次自动停用+不连坐+一键停用）· `MCPBridge`（MCP tools→ask 级工具箱+notifications→ambient 感官）· `GiftCeremony`（拆礼物台词+玩具昵称+日记素材）· DaemonSoul 插件集成（install 验证+仪式+日记，uninstall 收玩具）· 示例插件 ×2（weather sense + dice tool）· `docs/PLUGIN-GUIDE.md` 第三方开发文档。
 
 **M8 新增机制**（252 单测全绿）：`PlazaGossip`（见闻模型+注入防御 sanitize+故事包装）· `PlazaSightingStore`（100 条容量环形持久化）· `SocialSafety`（拉黑/举报/仅好友模式/社交总开关+综合互动检查）· `FriendLadder`（胜率×log(场次) 加权排名，成年门控）· `BadgeCollection`（6 种徽章+解锁检测+图鉴持久化）· DaemonSoul M8 集成（阶段门控：少年串门/成年广场天梯 + 徽章播报）。
 
@@ -419,7 +421,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | ✅ | **M6 它有自己的人生** | ClawAuthManager + PetRoom/PetProject + MilestoneTracker + PersonalityDrift + DaemonSoul 集成。`v0.7.0-m6`，198 单测全绿 |
 | ✅ | **M7 它有朋友了** | PetIdentity（孵化即领）+ FriendTicket + FriendStore + CourierProtocol + BattleEngine（确定性+签名）+ 档案 v2 含密钥。`v0.8.0-m7`，226 单测全绿。注：iroh Rust courier 进程为独立 crate（Swift 侧协议已就绪），实际网络互联留产品化阶段 |
 | ✅ | **M8 广场与朋友圈天梯** | PlazaGossip（注入防御）+ SocialSafety（拉黑/举报/仅好友/总开关）+ FriendLadder（成年门控）+ BadgeCollection。`v0.9.0-m8`，252 单测全绿。注：gossip 网络互联随 courier crate 产品化 |
-| ⬜ | **M9 它收到了礼物** | 插件标准**对外开放**：第三方文档 + 权限确认 UI 完备 + **MCP 桥** + 礼物仪式 + 示例插件 ×2（一个 sense、一个 tool） |
+| ✅ | **M9 它收到了礼物** | PluginManifest + PluginPermissions + PluginProcessManager + MCPBridge + GiftCeremony + 示例插件 ×2 + PLUGIN-GUIDE.md。`v1.0.0-m9`，283 单测全绿 |
 
 **阶梯外 · 明确远期/可选（M10+ 候选，非疏漏——spec 原文即标远期）**：
 
@@ -450,7 +452,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | ✅ **M6 它有自己的人生** | §5.4 爪子分级授权（ClawAuthManager）· §6.5 成年后五层循环（PetRoom/PetProject 自己的小日子 + PersonalityDrift 性格永续分化 + MilestoneTracker 共同经历）· §3 支柱 4「有自己的小日子」 |
 | ✅ **M7 它有朋友了** | §9.1 宠物身份与名片（PetIdentity/PetCard）· §9.2 信使协议（CourierProtocol，iroh Rust crate 留产品化）· §9.3 加好友（FriendTicket/FriendStore）· §9.4 对战（BattleEngine 数值底盘+演出+签名）· §12 #2 档案 v2 含密钥（闭环）· §6.5 第 5 层「它的朋友圈」· §3 支柱 7「有朋友圈」 |
 | ✅ **M8 广场与朋友圈天梯** | §9.5 广场（PlazaGossip 注入防御 + SocialSafety 礼仪安全）· §9.6 门控与单机完整性（少年串门/成年广场天梯/社交总开关）· §9.4 朋友圈天梯与徽章（FriendLadder + BadgeCollection） |
-| ⬜ **M9 它收到了礼物** | §10.4 MCP 桥 · §10.5 权限与安全 · §10.6 分寸与伙食费 · §10.7 礼物仪式 · §10 插件标准整体对外开放 |
+| ✅ **M9 它收到了礼物** | §10.2 manifest（PluginManifest 校验+tier 限制）· §10.3 进程管理（PluginProcessManager 崩溃隔离）· §10.4 MCP 桥（MCPBridge ask 级默认）· §10.5 权限与安全（PluginPermissions 喂养权单列）· §10.7 礼物仪式（GiftCeremony+日记）· §10 对外开放（PLUGIN-GUIDE.md + 示例 ×2） |
 
 **跨切面、不绑定单一里程碑的章节**：§1 北极星 / §2 拍板 / §3 产品支柱 / §4 目标 / §14 成功标准 / §15 开放问题 是贯穿全程的纲领与验收标尺；§3 七支柱按上表分散落到各里程碑兑现。§5.3 灵魂的家随各里程碑逐步建出对应子目录。**明确延后的交付项**（表现面/全球天梯/插件商店/小念头模型/移动端）见 §13「阶梯外」清单——它们不属于任何 M0–M9。
 

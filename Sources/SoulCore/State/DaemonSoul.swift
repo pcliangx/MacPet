@@ -428,4 +428,38 @@ public actor DaemonSoul {
         return FriendLadder.ranking(friends: friendStore.getAll(),
                                      includeSelf: (name: myName, wins: myWins, losses: myLosses))
     }
+
+    // ── Plugins (M9: 礼物仪式 + 安装) ──
+
+    private var permissionStore: PluginPermissionStore?
+    private var installedPlugins: [String: PluginManifest] = [:]
+
+    public func attachPluginStores(permissions: PluginPermissionStore) {
+        self.permissionStore = permissions
+    }
+
+    /// 安装插件（已通过权限确认后调用）。返回礼物仪式。
+    public func installPlugin(manifest: PluginManifest, grantedPermissions: [PluginPermission]) -> GiftCeremony.Ceremony? {
+        let issues = manifest.validate()
+        guard issues.isEmpty else { return nil }
+        installedPlugins[manifest.name] = manifest
+        if let permissionStore {
+            for p in grantedPermissions { permissionStore.grant(plugin: manifest.name, permission: p) }
+        }
+        let ceremony = GiftCeremony.perform(manifest: manifest, petName: identity?.petName ?? "宠物")
+        // 礼物进日记素材（spec §10.7：当晚写进日记）
+        memoryStore.add(Memory(kind: .episodic, content: ceremony.diaryNote, importance: 4))
+        return ceremony
+    }
+
+    /// 卸载插件 = 收起玩具（不悲情）
+    public func uninstallPlugin(name: String) -> String? {
+        guard let manifest = installedPlugins.removeValue(forKey: name) else { return nil }
+        permissionStore?.revokeAll(plugin: name)
+        let toyName = manifest.personaHints?.toyName ?? manifest.displayName
+        return GiftCeremony.putAway(toyName: toyName)
+    }
+
+    public var installedPluginCount: Int { installedPlugins.count }
+    public func pluginManifest(name: String) -> PluginManifest? { installedPlugins[name] }
 }
