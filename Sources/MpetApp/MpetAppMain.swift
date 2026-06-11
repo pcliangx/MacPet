@@ -81,6 +81,13 @@ struct StatusMenuContent: View {
             Text("心情：\(moodCN(viewModel.mood))")
             Text("注意力：\(attentionCN(viewModel.attention))")
             Text("阶段：\(stageCN(viewModel.stage))")
+            Divider()
+            Text("总 XP：\(viewModel.totalXP)")
+            Text("今日 XP：\(viewModel.todayXP)")
+            Text("连续活跃：\(viewModel.streakDays) 天")
+            Text("羁绊：\(viewModel.bond)")
+            ProgressView(value: viewModel.progress).frame(width: 150)
+            Divider()
             Text("版本：\(viewModel.soulVersion)").font(.caption).foregroundStyle(.secondary)
         }.padding().frame(width: 200)
     }
