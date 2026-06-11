@@ -369,4 +369,63 @@ public actor DaemonSoul {
         try? growthStore.save(growthState)
         try? store.save(state)
     }
+
+    // ── Plaza & Safety & Ladder & Badges (M8) ──
+
+    private var plazaStore: PlazaSightingStore?
+    private var safety: SocialSafety?
+    private var badgeStore: BadgeCollectionStore?
+
+    public func attachSocialStores(plaza: PlazaSightingStore, safety: SocialSafety, badges: BadgeCollectionStore) {
+        self.plazaStore = plaza
+        self.safety = safety
+        self.badgeStore = badges
+    }
+
+    /// 阶段门控（spec §9.6）：少年解锁串门；成年解锁广场与天梯
+    public var canVisitFriends: Bool { growthState.stage >= .juvenile }
+    public var canUsePlaza: Bool { growthState.stage >= .adult }
+    public var canUseLadder: Bool { FriendLadder.isUnlocked(stage: growthState.stage) }
+
+    /// 是否允许与某节点互动（社交总开关+拉黑+仅好友模式综合）
+    public func allowsSocialInteraction(nodeId: String) -> Bool {
+        guard let safety else { return false }
+        let isFriend = friendStore.get(id: nodeId) != nil
+        return safety.allowsInteraction(nodeId: nodeId, isFriend: isFriend)
+    }
+
+    /// 记录广场见闻（已过注入防御）
+    public func recordPlazaSighting(card: PetCard, snippet: String) {
+        guard canUsePlaza, let plazaStore else { return }
+        let safe = PlazaGossip.sanitizeSnippet(snippet)
+        plazaStore.add(PlazaSighting(card: card, snippet: safe))
+    }
+
+    /// 它回来讲的见闻
+    public func plazaStory() -> String? {
+        guard let plazaStore else { return nil }
+        return PlazaGossip.generateStory(sightings: plazaStore.recent(limit: 3))
+    }
+
+    /// 检查徽章解锁。返回新解锁的徽章。
+    public func checkBadges() -> [Badge] {
+        guard let badgeStore else { return [] }
+        let totalWins = friendStore.getAll().reduce(0) { $0 + $1.battleRecord.wins }
+        return badgeStore.checkUnlocks(
+            friendCount: friendStore.friendCount(),
+            rivalCount: friendStore.rivalCount(),
+            totalWins: totalWins,
+            sightingCount: plazaStore?.count ?? 0
+        )
+    }
+
+    /// 朋友圈天梯（成年解锁；未解锁返回空）
+    public func friendLadder() -> [FriendLadder.Entry] {
+        guard canUseLadder else { return [] }
+        let myWins = friendStore.getAll().reduce(0) { $0 + $1.battleRecord.wins }
+        let myLosses = friendStore.getAll().reduce(0) { $0 + $1.battleRecord.losses }
+        let myName = identity?.petName ?? "我"
+        return FriendLadder.ranking(friends: friendStore.getAll(),
+                                     includeSelf: (name: myName, wins: myWins, losses: myLosses))
+    }
 }

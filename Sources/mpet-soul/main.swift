@@ -57,6 +57,16 @@ await MemoryTools.register(registry: registry, memoryStore: memoryStore)
 let identity = await daemon.ensureIdentity(petName: Genome.default.petName, species: Genome.default.species)
 print("🪪 宠物身份就绪：\(identity.petName)（公钥 \(identity.publicKey.prefix(8).map { String(format: "%02x", $0) }.joined())…）")
 
+// M8: 广场/安全/徽章 stores（spec §9.5/§9.6）
+let plazaDir = supportDir.appendingPathComponent("soul/plaza")
+let safetyDir = supportDir.appendingPathComponent("soul/safety")
+let badgeDir = supportDir.appendingPathComponent("soul/badges")
+await daemon.attachSocialStores(
+    plaza: PlazaSightingStore(directory: plazaDir),
+    safety: SocialSafety(directory: safetyDir),
+    badges: BadgeCollectionStore(directory: badgeDir)
+)
+
 func currentAttention() -> Attention {
     AttentionResolver.resolve(PresenceSensorMac.snapshot(watched: Set(config.watchedBundleIDs)))
 }
@@ -172,6 +182,12 @@ Task {
         }
         if let anniversary = await daemon.checkAnniversary() {
             sink(.directive(kind: "speak", payload: ["text": .string(anniversary)]))
+        }
+
+        // M8: 检查徽章解锁
+        let newBadges = await daemon.checkBadges()
+        for b in newBadges {
+            sink(.directive(kind: "speak", payload: ["text": .string("我得到了「\(b.name)」徽章！\(b.description)")]))
         }
 
         // 做梦：深夜时段（2-4 点）且还没做过梦
