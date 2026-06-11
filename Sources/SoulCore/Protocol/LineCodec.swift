@@ -6,11 +6,12 @@ public struct LineCodec {
     private var buffer = Data()
     public init() {}
 
+    // 毫秒时间戳：保住亚秒精度（ISO8601 无小数秒会静默截断）
     private static let encoder: JSONEncoder = {
-        let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; return e
+        let e = JSONEncoder(); e.dateEncodingStrategy = .millisecondsSince1970; return e
     }()
     private static let decoder: JSONDecoder = {
-        let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601; return d
+        let d = JSONDecoder(); d.dateDecodingStrategy = .millisecondsSince1970; return d
     }()
 
     public static func encode(_ m: PeripheralMessage) throws -> Data {

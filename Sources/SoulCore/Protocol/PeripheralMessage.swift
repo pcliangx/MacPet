@@ -1,27 +1,6 @@
 // Sources/SoulCore/Protocol/PeripheralMessage.swift
 import Foundation
 
-public struct PerceptAction: Codable, Equatable, Sendable {
-    public let id: String, label: String
-    public init(id: String, label: String) { self.id = id; self.label = label }
-}
-
-public enum PerceptPriority: String, Codable, Sendable { case ambient, nudge, alert }
-
-public struct Percept: Codable, Equatable, Sendable {
-    public let id: String
-    public let kind: String
-    public let priority: PerceptPriority
-    public let payload: [String: JSONValue]
-    public let actions: [PerceptAction]
-    public let at: Date
-    public init(id: String = UUID().uuidString, kind: String, priority: PerceptPriority,
-                payload: [String: JSONValue] = [:], actions: [PerceptAction] = [], at: Date) {
-        self.id = id; self.kind = kind; self.priority = priority
-        self.payload = payload; self.actions = actions; self.at = at
-    }
-}
-
 /// 外设协议族 v0（spec §10.3）。t 字段路由；未知类型容忍为 .unknown。
 public enum PeripheralMessage: Equatable, Sendable {
     case hello(role: String, name: String, proto: Int)
@@ -39,6 +18,7 @@ public enum PeripheralMessage: Equatable, Sendable {
     case status
     case statusOK([String: JSONValue])
     case ping, pong, bye
+    /// 仅作解码容忍存在；重新编码只保留 t（设计如此，灵魂从不转发 unknown）
     case unknown(t: String)
 }
 
