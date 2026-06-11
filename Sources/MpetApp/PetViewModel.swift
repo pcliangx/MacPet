@@ -5,6 +5,7 @@ import SoulCore
 
 @MainActor
 final class PetViewModel: ObservableObject {
+    @Published var genome: AppearanceGenome = .default
     @Published var mood: String = "calm"
     @Published var attention: String = "elsewhere"
     @Published var stage: String = "baby"

@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import SoulCore
 
 @main
 struct MpetAppMain: App {
@@ -10,7 +11,10 @@ struct MpetAppMain: App {
         WindowGroup {
             ZStack {
                 if firstLaunch {
-                    OnboardingView { firstLaunch = false }
+                    OnboardingView { genome in
+                        viewModel.genome = genome
+                        firstLaunch = false
+                    }
                 } else {
                     PetWindowContent(viewModel: viewModel)
                 }
@@ -39,7 +43,7 @@ struct PetWindowContent: View {
 
     var body: some View {
         ZStack {
-            SVGRenderer(state: viewModel.moodToSVGState, emote: viewModel.currentEmote)
+            SVGRenderer(genome: viewModel.genome, stage: .baby, state: viewModel.moodToSVGState, emote: viewModel.currentEmote)
                 .frame(width: 180, height: 180)
             if let bubble = viewModel.bubbleText {
                 BubbleView(text: bubble).offset(y: -110)
