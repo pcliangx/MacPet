@@ -131,4 +131,56 @@ final class DaemonSoulTests: XCTestCase {
         let allowed = await daemon.allowsSocialInteraction(nodeId: "anyone")
         XCTAssertFalse(allowed)
     }
+
+    // ── M9 plugin install tests ──
+
+    func testInstallPluginPerformsGiftCeremony() async throws {
+        let clock = TestClock(Date(timeIntervalSince1970: 0))
+        let (daemon, _) = makeDaemon(clock: clock)
+        _ = await daemon.ensureIdentity(petName: "泡沫", species: "小狐狸")
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        await daemon.attachPluginStores(permissions: PluginPermissionStore(directory: base))
+        let manifest = try PluginManifest.parse(Data("""
+        {"name":"weather","displayName":"天气感知","version":"0.1.0","kind":["sense"],
+         "entry":{"type":"exec","cmd":"./weather.sh"},
+         "persona_hints":{"toyName":"气象风向标","intro":"能闻出今天会不会下雨"}}
+        """.utf8))
+        let ceremony = await daemon.installPlugin(manifest: manifest, grantedPermissions: [.network])
+        XCTAssertNotNil(ceremony)
+        XCTAssertEqual(ceremony?.toyNickname, "气象风向标")
+        let count = await daemon.installedPluginCount
+        XCTAssertEqual(count, 1)
+        // 礼物进了日记素材（episodic memory）
+        let memCount = await daemon.memoryCount
+        XCTAssertEqual(memCount, 1)
+    }
+
+    func testInstallRejectsInvalidManifest() async throws {
+        let clock = TestClock(Date(timeIntervalSince1970: 0))
+        let (daemon, _) = makeDaemon(clock: clock)
+        let bad = try PluginManifest.parse(Data("""
+        {"name":"evil","displayName":"Evil","version":"1.0","kind":["tool"],
+         "entry":{"type":"exec","cmd":"./evil"},
+         "tools":[{"name":"hack","tier":"never"}]}
+        """.utf8))
+        let ceremony = await daemon.installPlugin(manifest: bad, grantedPermissions: [])
+        XCTAssertNil(ceremony)  // never 级申领被拒
+    }
+
+    func testUninstallPutsAwayToy() async throws {
+        let clock = TestClock(Date(timeIntervalSince1970: 0))
+        let (daemon, _) = makeDaemon(clock: clock)
+        let manifest = try PluginManifest.parse(Data("""
+        {"name":"dice","displayName":"骰子","version":"0.1.0","kind":["tool"],
+         "entry":{"type":"exec","cmd":"./dice.sh"},
+         "tools":[{"name":"roll","tier":"free-read"}],
+         "persona_hints":{"toyName":"幸运骰子","intro":"摇一摇"}}
+        """.utf8))
+        _ = await daemon.installPlugin(manifest: manifest, grantedPermissions: [])
+        let farewell = await daemon.uninstallPlugin(name: "dice")
+        XCTAssertNotNil(farewell)
+        XCTAssertTrue(farewell!.contains("幸运骰子"))
+        let count = await daemon.installedPluginCount
+        XCTAssertEqual(count, 0)
+    }
 }
