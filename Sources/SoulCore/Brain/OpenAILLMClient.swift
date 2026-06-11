@@ -19,6 +19,7 @@ public final class OpenAILLMClient: LLMProviding, @unchecked Sendable {
 
         let (bytes, response) = try await session.bytes(for: req)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            bytes.task.cancel()
             throw LLMError.http((response as? HTTPURLResponse)?.statusCode ?? -1)
         }
 
