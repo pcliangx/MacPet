@@ -92,4 +92,7 @@ server = try SocketServer(socketPath: supportDir.appendingPathComponent("soul.so
 }
 server.start()
 print("mpet-soul \(SoulCoreInfo.version) ｜ soul.sock 就绪 ｜ 模型=\(config.llm.model)")
-dispatchMain()
+// stdout 重定向到文件时 libc 默认全缓冲；显式刷新让日志即时可见（常驻进程不会自然 flush）
+fflush(stdout)
+// 保持灵魂常驻；NWListener 回调在自己的 global 队列上运行，主任务永久挂起即可
+await withUnsafeContinuation { (_: UnsafeContinuation<Void, Never>) in }
