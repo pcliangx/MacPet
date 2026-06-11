@@ -22,11 +22,13 @@
 | ✅ | **M4 它记得你** | `v0.5.0-m4`；计划见 `docs/superpowers/plans/2026-06-13-m4-remembers-you.md` |
 | ✅ | **M5 它是你创造的** | `v0.6.0-m5`；计划见 `docs/superpowers/plans/2026-06-13-m5-your-creation.md`；形象穿刺已验证（`spikes/svg-pet/`） |
 | ✅ | **M6 它有自己的人生** | `v0.7.0-m6`；计划见 `docs/superpowers/plans/2026-06-14-m6-own-life.md` |
-| ⬜ | M7 它有朋友了 | — |
+| ✅ | **M7 它有朋友了** | `v0.8.0-m7`；计划见 `docs/superpowers/plans/2026-06-14-m7-has-friends.md` |
 | ⬜ | M8 广场与朋友圈天梯 | — |
 | ⬜ | M9 它收到了礼物 | — |
 
 **M0 实测在码的机制**（42 单测全绿，headless 端到端验收通过）：事件驱动 LLM agent 循环（OpenAI 兼容、流式、工具调用增量组装）· 反射弧（注意力×优先级喊人梯度）· 四心情引擎 · 阶段门控工具箱（`speak`/`emote`）· 人格合成 v0（基因+阶段+心情）· 唤醒策略（alert 直通/nudge 预算）· 一颗心并发（交互快车道抢占后台+失败回滚）· 外设 NDJSON 协议族 v0（感官/工具/口粮/affordance 信封全定义）· 在场感知 · 可注入时钟+跨天对账 · 原子写生命档案（自愈+7 日备份）· 端点能力探测 · 假 LLM 测试架。
+
+**M7 新增机制**（226 单测全绿）：`PetIdentity`（密钥对生成+名片+签名，孵化即领）· `PetCard`（公开名片）· `FriendTicket`（base64 编解码+签名验证）· `FriendStore`（好友/宿敌/战绩持久化）· `CourierProtocol`（Swift↔courier NDJSON：hello/announce/visit/battle/gossip）· `BattleEngine`（确定性数值底盘+SeededRNG+性格加成+演出叙事+签名）· DaemonSoul 社交集成（ensureIdentity/addFriend/initiateBattle/socialSnapshot）· 档案 v2（含身份密钥+好友，v1 容忍导入，§12#2 闭环）。
 
 **M6 新增机制**（198 单测全绿）：`ClawAuthManager`（分级授权：freeHome/freeRead/ask/never）· `PetRoom`/`PetRoomStore`（它的房间：物品+礼物）· `PetProject`/`PetProjectStore`（小项目：进度+状态）· `MilestoneTracker`（纪念日检测+新里程碑发现+问候生成）· `PersonalityDrift`（性格永续分化：好奇心/话痨/温柔/顽皮/夜猫子）· DaemonSoul 集成（房间/项目/里程碑/性格+每日漂移）。
 
@@ -413,7 +415,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | ✅ | **M4 它记得你** | Memory + MemoryStore + MemorySearch + DreamEngine + DiaryWriter + ArchiveExporter + remember/recall 工具 + PersonaSynth 记忆染色。`v0.5.0-m4`，158 单测全绿 |
 | ✅ | **M5 它是你创造的** | AppearanceGenome + GenomeRenderer + CoCreationCeremony + MpetApp 数据驱动 SVG + 孵化 onboarding。`v0.6.0-m5`，173 单测全绿 |
 | ✅ | **M6 它有自己的人生** | ClawAuthManager + PetRoom/PetProject + MilestoneTracker + PersonalityDrift + DaemonSoul 集成。`v0.7.0-m6`，198 单测全绿 |
-| ⬜ | **M7 它有朋友了** | mpet-courier v0（iroh 直连/relay 兜底）+ 身份密钥（孵化即领）+ ticket 加好友 + 访客宠物运行时 + 串门 + 双签名异步对战（带 sim 版本号）+ 宿敌——**无账号系统**；档案导出扩展**含身份密钥**（换机不失身份，§12#2 闭环） |
+| ✅ | **M7 它有朋友了** | PetIdentity（孵化即领）+ FriendTicket + FriendStore + CourierProtocol + BattleEngine（确定性+签名）+ 档案 v2 含密钥。`v0.8.0-m7`，226 单测全绿。注：iroh Rust courier 进程为独立 crate（Swift 侧协议已就绪），实际网络互联留产品化阶段 |
 | ⬜ | **M8 广场与朋友圈天梯** | 广场 gossip + 引导节点 + 社交礼仪与安全（过滤/举报/拉黑/仅好友模式）+ 朋友圈天梯 + 徽章图鉴 |
 | ⬜ | **M9 它收到了礼物** | 插件标准**对外开放**：第三方文档 + 权限确认 UI 完备 + **MCP 桥** + 礼物仪式 + 示例插件 ×2（一个 sense、一个 tool） |
 
@@ -444,7 +446,7 @@ mpet 是住在你 Mac 上的**电子生命**。
 | ✅ **M4 它记得你** | §7 记忆系统（Memory/MemoryStore/MemorySearch/DreamEngine/DiaryWriter）· §5.2 `remember`·`recall`（MemoryTools juvenile+）· §12 #2 生命档案导出/导入 v0（ArchiveExporter）· PersonaSynth 记忆染色 · §3 支柱 3「记得你」 |
 | ✅ **M5 它是你创造的** | §8 形象与动画（AppearanceGenome/GenomeRenderer/CoCreationCeremony/SVGRenderer 数据驱动）· §11 初见孵化 onboarding（OnboardingView 创造仪式）· §6.1 外观维度成长 · §3 支柱 6「是你创造的」 |
 | ✅ **M6 它有自己的人生** | §5.4 爪子分级授权（ClawAuthManager）· §6.5 成年后五层循环（PetRoom/PetProject 自己的小日子 + PersonalityDrift 性格永续分化 + MilestoneTracker 共同经历）· §3 支柱 4「有自己的小日子」 |
-| ⬜ **M7 它有朋友了** | §9.1 宠物身份与名片 · §9.2 信使与轻基建（iroh）· §9.3 加好友与串门 · §9.4 对战（数值底盘+性格演出/双签名）· §12 #2 档案导出含密钥（闭环）· §6.5 第 5 层「它的朋友圈」· §3 支柱 7「有朋友圈」 |
+| ✅ **M7 它有朋友了** | §9.1 宠物身份与名片（PetIdentity/PetCard）· §9.2 信使协议（CourierProtocol，iroh Rust crate 留产品化）· §9.3 加好友（FriendTicket/FriendStore）· §9.4 对战（BattleEngine 数值底盘+演出+签名）· §12 #2 档案 v2 含密钥（闭环）· §6.5 第 5 层「它的朋友圈」· §3 支柱 7「有朋友圈」 |
 | ⬜ **M8 广场与朋友圈天梯** | §9.5 广场 · §9.6 门控与单机完整性 · §9.4 朋友圈天梯与徽章 |
 | ⬜ **M9 它收到了礼物** | §10.4 MCP 桥 · §10.5 权限与安全 · §10.6 分寸与伙食费 · §10.7 礼物仪式 · §10 插件标准整体对外开放 |
 
