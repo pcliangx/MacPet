@@ -1,1 +1,1 @@
-public enum SoulCoreInfo { public static let version = "0.2.0-m1" }
+public enum SoulCoreInfo { public static let version = "1.0.0-m9" }

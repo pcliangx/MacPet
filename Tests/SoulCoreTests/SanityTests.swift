@@ -2,5 +2,5 @@ import XCTest
 @testable import SoulCore
 
 final class SanityTests: XCTestCase {
-    func testVersion() { XCTAssertEqual(SoulCoreInfo.version, "0.2.0-m1") }
+    func testVersion() { XCTAssertEqual(SoulCoreInfo.version, "1.0.0-m9") }
 }
