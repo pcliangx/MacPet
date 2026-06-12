@@ -6,6 +6,12 @@ import SoulCore
 struct MpetAppMain: App {
     @StateObject private var viewModel = PetViewModel()
     @State private var firstLaunch = true
+    @State private var bootstrapHint: String?
+
+    init() {
+        // .app 形态：拷出内嵌 daemon + 配置就绪时自动装 LaunchAgent
+        _bootstrapHint = State(initialValue: DaemonBootstrap.bootstrap())
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -17,6 +23,16 @@ struct MpetAppMain: App {
                     }
                 } else {
                     PetWindowContent(viewModel: viewModel)
+                }
+                if let hint = bootstrapHint {
+                    VStack {
+                        Spacer()
+                        Text(hint)
+                            .font(.caption)
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(.yellow.opacity(0.9)))
+                            .padding(.bottom, 4)
+                    }
                 }
             }
         }
